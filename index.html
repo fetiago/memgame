@@ -1,5 +1,4 @@
-<!DOCTYPE html>
-<html lang="pt-BR">
+<!DOCTYPE html><html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
@@ -18,429 +17,405 @@
       --danger: #ff4b4b;
       --shadow: 0 8px 20px rgba(38, 50, 56, 0.08);
       --radius: 18px;
-    }
+    }* {
+  box-sizing: border-box;
+}
 
-    * {
-      box-sizing: border-box;
-    }
+body {
+  margin: 0;
+  font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  background: var(--bg);
+  color: var(--text);
+}
 
-    body {
-      margin: 0;
-      font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-      background: var(--bg);
-      color: var(--text);
-    }
+.app {
+  width: min(920px, 100%);
+  margin: 0 auto;
+  padding: 20px;
+}
 
-    .app {
-      width: min(920px, 100%);
-      margin: 0 auto;
-      padding: 20px;
-    }
+header {
+  display: grid;
+  gap: 14px;
+  margin-bottom: 18px;
+}
 
-    header {
-      display: grid;
-      gap: 14px;
-      margin-bottom: 18px;
-    }
+h1 {
+  margin: 0;
+  font-size: clamp(1.8rem, 4vw, 2.6rem);
+  line-height: 1;
+  color: #243746;
+  text-align: center;
+}
 
-    h1 {
-      margin: 0;
-      font-size: clamp(1.8rem, 4vw, 2.6rem);
-      line-height: 1;
-      color: #243746;
-      text-align: center;
-    }
+.subtitulo {
+  margin: 0;
+  color: var(--muted);
+  text-align: center;
+  font-size: 0.98rem;
+}
 
-    .subtitulo {
-      margin: 0;
-      color: var(--muted);
-      text-align: center;
-      font-size: 0.98rem;
-    }
+.painel-arquivo,
+.card {
+  background: var(--card);
+  border: 1px solid var(--line);
+  border-radius: var(--radius);
+  box-shadow: var(--shadow);
+}
 
-    .painel-arquivo,
-    .card {
-      background: var(--card);
-      border: 1px solid var(--line);
-      border-radius: var(--radius);
-      box-shadow: var(--shadow);
-    }
+.painel-arquivo {
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+}
 
-    .painel-arquivo {
-      display: grid;
-      gap: 12px;
-      padding: 16px;
-    }
+.linha-controles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  align-items: center;
+  justify-content: center;
+}
 
-    .linha-controles {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-      align-items: center;
-      justify-content: center;
-    }
+.file-label,
+.btn {
+  appearance: none;
+  border: 0;
+  border-radius: 999px;
+  padding: 12px 18px;
+  font-size: 1rem;
+  font-weight: 800;
+  cursor: pointer;
+  transition: transform 0.12s ease, filter 0.12s ease, background 0.12s ease;
+  text-decoration: none;
+  user-select: none;
+}
 
-    .file-label,
-    .btn {
-      appearance: none;
-      border: 0;
-      border-radius: 999px;
-      padding: 12px 18px;
-      font-size: 1rem;
-      font-weight: 800;
-      cursor: pointer;
-      transition: transform 0.12s ease, filter 0.12s ease, background 0.12s ease;
-      text-decoration: none;
-      user-select: none;
-    }
+.file-label {
+  background: var(--primary);
+  color: white;
+  box-shadow: 0 4px 0 var(--primary-dark);
+}
 
-    .file-label {
-      background: var(--primary);
-      color: white;
-      box-shadow: 0 4px 0 var(--primary-dark);
-    }
+.file-label:hover,
+.btn:hover {
+  filter: brightness(0.98);
+  transform: translateY(-1px);
+}
 
-    .file-label:hover,
-    .btn:hover {
-      filter: brightness(0.98);
-      transform: translateY(-1px);
-    }
+.file-label:active,
+.btn:active {
+  transform: translateY(2px);
+  box-shadow: none;
+}
 
-    .file-label:active,
-    .btn:active {
-      transform: translateY(2px);
-      box-shadow: none;
-    }
+input[type="file"] {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
 
-    input[type="file"] {
-      position: absolute;
-      width: 1px;
-      height: 1px;
-      padding: 0;
-      margin: -1px;
-      overflow: hidden;
-      clip: rect(0, 0, 0, 0);
-      white-space: nowrap;
-      border: 0;
-    }
+select {
+  min-width: min(100%, 280px);
+  padding: 12px 14px;
+  border: 1px solid var(--line);
+  border-radius: 12px;
+  background: #fff;
+  color: var(--text);
+  font-size: 1rem;
+}
 
-    select {
-      min-width: min(100%, 280px);
-      padding: 12px 14px;
-      border: 1px solid var(--line);
-      border-radius: 12px;
-      background: #fff;
-      color: var(--text);
-      font-size: 1rem;
-    }
+.ajuda {
+  margin: 0;
+  text-align: center;
+  color: var(--muted);
+  font-size: 0.92rem;
+}
 
-    .ajuda {
-      margin: 0;
-      text-align: center;
-      color: var(--muted);
-      font-size: 0.92rem;
-    }
+.erro-arquivo {
+  display: none;
+  margin: 0;
+  padding: 10px 12px;
+  border-radius: 12px;
+  background: #ffe8e8;
+  color: #a81919;
+  font-weight: 700;
+  text-align: center;
+}
 
-    .erro-arquivo {
-      display: none;
-      margin: 0;
-      padding: 10px 12px;
-      border-radius: 12px;
-      background: #ffe8e8;
-      color: #a81919;
-      font-weight: 700;
-      text-align: center;
-    }
+main {
+  display: grid;
+  gap: 16px;
+}
 
-    main {
-      display: grid;
-      gap: 16px;
-    }
+.topo-treino {
+  padding: 18px;
+  display: grid;
+  gap: 10px;
+}
 
-    .topo-treino {
-      padding: 18px;
-      display: grid;
-      gap: 10px;
-    }
+.titulo-texto {
+  margin: 0;
+  font-size: clamp(1.2rem, 3vw, 1.7rem);
+  text-align: center;
+  color: #243746;
+}
 
-    .titulo-texto {
-      margin: 0;
-      font-size: clamp(1.2rem, 3vw, 1.7rem);
-      text-align: center;
-      color: #243746;
-    }
+.status {
+  display: flex;
+  gap: 10px;
+  align-items: center;
+  justify-content: center;
+  flex-wrap: wrap;
+  color: var(--muted);
+  font-weight: 800;
+}
 
-    .status {
-      display: flex;
-      gap: 10px;
-      align-items: center;
-      justify-content: center;
-      flex-wrap: wrap;
-      color: var(--muted);
-      font-weight: 800;
-    }
+.barra-progresso {
+  width: 100%;
+  height: 15px;
+  background: #e8eef3;
+  border-radius: 999px;
+  overflow: hidden;
+}
 
-    .barra-progresso {
-      width: 100%;
-      height: 15px;
-      background: #e8eef3;
-      border-radius: 999px;
-      overflow: hidden;
-    }
+.barra-progresso > div {
+  width: 0%;
+  height: 100%;
+  background: var(--success);
+  border-radius: inherit;
+  transition: width 0.25s ease;
+}
 
-    .barra-progresso > div {
-      width: 0%;
-      height: 100%;
-      background: var(--success);
-      border-radius: inherit;
-      transition: width 0.25s ease;
-    }
+.instrucao {
+  margin: 0;
+  color: var(--muted);
+  text-align: center;
+  font-size: 0.98rem;
+}
 
-    .instrucao {
-      margin: 0;
-      color: var(--muted);
-      text-align: center;
-      font-size: 0.98rem;
-    }
+.area-montagem {
+  min-height: 138px;
+  padding: 16px;
+  display: flex;
+  flex-wrap: wrap;
+  align-content: flex-start;
+  gap: 10px;
+  background: #ffffff;
+  border: 2px dashed #c8d5df;
+  border-radius: var(--radius);
+}
 
-    .area-montagem {
-      min-height: 138px;
-      padding: 16px;
-      display: flex;
-      flex-wrap: wrap;
-      align-content: flex-start;
-      gap: 10px;
-      background: #ffffff;
-      border: 2px dashed #c8d5df;
-      border-radius: var(--radius);
-    }
+.area-montagem.vazia::before {
+  content: "Monte o trecho aqui...";
+  color: #9aa8b0;
+  font-weight: 700;
+}
 
-    .area-montagem.vazia::before {
-      content: "Monte a frase aqui...";
-      color: #9aa8b0;
-      font-weight: 700;
-    }
+.area-palavras {
+  min-height: 130px;
+  padding: 18px;
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-content: flex-start;
+  gap: 10px;
+}
 
-    .area-palavras {
-      min-height: 130px;
-      padding: 18px;
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: center;
-      align-content: flex-start;
-      gap: 10px;
-    }
+.chip {
+  border: 2px solid #d6e2ea;
+  border-radius: 14px;
+  background: #fff;
+  color: var(--text);
+  padding: 10px 14px;
+  min-height: 44px;
+  font-size: 1.02rem;
+  font-weight: 800;
+  line-height: 1.1;
+  cursor: pointer;
+  box-shadow: 0 4px 0 #d6e2ea;
+  transition: transform 0.12s ease, box-shadow 0.12s ease, background 0.12s ease, opacity 0.12s ease;
+}
 
-    .chip {
-      border: 2px solid #d6e2ea;
-      border-radius: 14px;
-      background: #fff;
-      color: var(--text);
-      padding: 10px 14px;
-      min-height: 44px;
-      font-size: 1.02rem;
-      font-weight: 800;
-      line-height: 1.1;
-      cursor: pointer;
-      box-shadow: 0 4px 0 #d6e2ea;
-      transition: transform 0.12s ease, box-shadow 0.12s ease, background 0.12s ease, opacity 0.12s ease;
-    }
+.chip:hover {
+  transform: translateY(-1px);
+  background: #f7fbff;
+}
 
-    .chip:hover {
-      transform: translateY(-1px);
-      background: #f7fbff;
-    }
+.chip:active {
+  transform: translateY(2px);
+  box-shadow: 0 1px 0 #d6e2ea;
+}
 
-    .chip:active {
-      transform: translateY(2px);
-      box-shadow: 0 1px 0 #d6e2ea;
-    }
+.chip.selecionada {
+  background: #e9f8ff;
+  border-color: var(--primary);
+  box-shadow: 0 4px 0 var(--primary-dark);
+}
 
-    .chip.selecionada {
-      background: #e9f8ff;
-      border-color: var(--primary);
-      box-shadow: 0 4px 0 var(--primary-dark);
-    }
+.chip.oculta {
+  visibility: hidden;
+  pointer-events: none;
+}
 
-    .chip.oculta {
-      visibility: hidden;
-      pointer-events: none;
-    }
+.chip.erro {
+  border-color: var(--danger);
+  background: #fff0f0;
+  animation: tremer 0.32s;
+}
 
-    .chip.erro {
-      border-color: var(--danger);
-      background: #fff0f0;
-      animation: tremer 0.32s;
-    }
+.rodape-treino {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  padding: 6px 0 24px;
+}
 
-    .rodape-treino {
-      display: flex;
-      justify-content: center;
-      gap: 10px;
-      flex-wrap: wrap;
-      padding: 6px 0 24px;
-    }
+.btn {
+  background: #edf4f8;
+  color: #314958;
+  box-shadow: 0 4px 0 #cbd9e2;
+}
 
-    .btn {
-      background: #edf4f8;
-      color: #314958;
-      box-shadow: 0 4px 0 #cbd9e2;
-    }
+.btn.primario {
+  display: none;
+  background: var(--success);
+  color: #fff;
+  box-shadow: 0 4px 0 var(--success-dark);
+}
 
-    .btn.primario {
-      display: none;
-      background: var(--success);
-      color: #fff;
-      box-shadow: 0 4px 0 var(--success-dark);
-    }
+.btn.secundario {
+  background: #fff;
+}
 
-    .btn.secundario {
-      background: #fff;
-    }
+.feedback {
+  min-height: 28px;
+  text-align: center;
+  font-weight: 900;
+  color: var(--muted);
+}
 
-    .feedback {
-      min-height: 28px;
-      text-align: center;
-      font-weight: 900;
-      color: var(--muted);
-    }
+.feedback.ok {
+  color: var(--success-dark);
+}
 
-    .feedback.ok {
-      color: var(--success-dark);
-    }
+.feedback.erro {
+  color: #cc2525;
+}
 
-    .feedback.erro {
-      color: #cc2525;
-    }
+.tela-vazia {
+  padding: 28px;
+  text-align: center;
+  color: var(--muted);
+}
 
-    .tela-vazia {
-      padding: 28px;
-      text-align: center;
-      color: var(--muted);
-    }
+.modelo-json {
+  width: 100%;
+  overflow: auto;
+  margin: 12px 0 0;
+  padding: 14px;
+  border-radius: 14px;
+  background: #17212b;
+  color: #e9f2f9;
+  text-align: left;
+  font-size: 0.85rem;
+}
 
-    .modelo-json {
-      width: 100%;
-      overflow: auto;
-      margin: 12px 0 0;
-      padding: 14px;
-      border-radius: 14px;
-      background: #17212b;
-      color: #e9f2f9;
-      text-align: left;
-      font-size: 0.85rem;
-    }
+@keyframes tremer {
+  0% { transform: translateX(0); }
+  25% { transform: translateX(-5px); }
+  50% { transform: translateX(5px); }
+  75% { transform: translateX(-5px); }
+  100% { transform: translateX(0); }
+}
 
-    @keyframes tremer {
-      0% { transform: translateX(0); }
-      25% { transform: translateX(-5px); }
-      50% { transform: translateX(5px); }
-      75% { transform: translateX(-5px); }
-      100% { transform: translateX(0); }
-    }
+@media (max-width: 560px) {
+  .app {
+    padding: 14px;
+  }
 
-    @media (max-width: 560px) {
-      .app {
-        padding: 14px;
-      }
+  .painel-arquivo,
+  .topo-treino,
+  .area-palavras,
+  .area-montagem {
+    border-radius: 14px;
+  }
 
-      .painel-arquivo,
-      .topo-treino,
-      .area-palavras,
-      .area-montagem {
-        border-radius: 14px;
-      }
+  .chip {
+    font-size: 0.95rem;
+    padding: 9px 11px;
+  }
+}
 
-      .chip {
-        font-size: 0.95rem;
-        padding: 9px 11px;
-      }
-    }
   </style>
 </head>
 <body>
   <div class="app">
     <header>
       <h1>Memorizador de Textos</h1>
-      <p class="subtitulo">Escolha um JSON e monte cada trecho clicando nas palavras, como num exercício de tradução.</p>
+      <p class="subtitulo">Escolha um JSON e monte cada trecho clicando nas palavras, como num exercício de tradução.</p><section class="painel-arquivo" aria-label="Carregamento de arquivo JSON">
+    <div class="linha-controles">
+      <label class="file-label" for="input-json">Selecionar JSON</label>
+      <input id="input-json" type="file" accept=".json,application/json" multiple />
 
-      <section class="painel-arquivo" aria-label="Carregamento de arquivo JSON">
-        <div class="linha-controles">
-          <label class="file-label" for="input-json">Selecionar JSON</label>
-          <input id="input-json" type="file" accept=".json,application/json" multiple />
+      <select id="select-texto" disabled>
+        <option value="">Nenhum texto carregado</option>
+      </select>
 
-          <select id="select-texto" disabled>
-            <option value="">Nenhum texto carregado</option>
-          </select>
+      <select id="select-modo" disabled>
+        <option value="frases">Treinar por trechos/frases</option>
+        <option value="paragrafos">Treinar por parágrafos</option>
+      </select>
+    </div>
 
-          <select id="select-modo" disabled>
-            <option value="frases">Treinar por frases</option>
-            <option value="paragrafos">Treinar por parágrafos</option>
-          </select>
-        </div>
+    <p class="ajuda" id="nome-arquivo">Você pode selecionar um ou mais arquivos .json.</p>
+    <p class="erro-arquivo" id="erro-arquivo"></p>
+  </section>
+</header>
 
-        <p class="ajuda" id="nome-arquivo">Você pode selecionar um ou mais arquivos .json.</p>
-        <p class="erro-arquivo" id="erro-arquivo"></p>
-      </section>
-    </header>
+<main>
+  <section class="card topo-treino" id="painel-treino" hidden>
+    <h2 class="titulo-texto" id="titulo-texto"></h2>
 
-    <main>
-      <section class="card topo-treino" id="painel-treino" hidden>
-        <h2 class="titulo-texto" id="titulo-texto"></h2>
+    <div class="status">
+      <span><span id="rotulo-unidade">Trecho</span> <span id="unidade-atual">0</span> de <span id="total-unidades">0</span></span>
+      <span>•</span>
+      <span>Erros: <span id="contador-erros">0</span></span>
+    </div>
 
-        <div class="status">
-          <span><span id="rotulo-unidade">Frase</span> <span id="unidade-atual">0</span> de <span id="total-unidades">0</span></span>
-          <span>•</span>
-          <span>Erros: <span id="contador-erros">0</span></span>
-        </div>
+    <div class="barra-progresso" aria-label="Progresso do texto">
+      <div id="barra-progresso"></div>
+    </div>
 
-        <div class="barra-progresso" aria-label="Progresso do texto">
-          <div id="barra-progresso"></div>
-        </div>
+    <p class="instrucao">Escolha a próxima palavra correta. Para desfazer, clique na última palavra montada.</p>
+  </section>
 
-        <p class="instrucao">Escolha a próxima palavra correta. Para desfazer, clique na última palavra montada.</p>
-      </section>
+  <section class="card tela-vazia" id="tela-vazia">
+    <strong>Nenhum texto carregado ainda.</strong>
+    <p>Este app aceita os dois formatos abaixo:</p>
+    <pre class="modelo-json">[
 
-      <section class="card tela-vazia" id="tela-vazia">
-        <strong>Nenhum texto carregado ainda.</strong>
-        <p>Este app aceita os dois formatos abaixo:</p>
-        <pre class="modelo-json">[
-  {
-    "titulo": "Meu texto",
-    "paragrafos": [
-      "Primeiro parágrafo.",
-      "Segundo parágrafo."
-    ]
-  }
-]</pre>
-        <pre class="modelo-json">{
-  "titulo": "Meu texto",
-  "paragrafos": [
-    {
-      "id": "p001",
-      "texto": "Primeiro parágrafo completo.",
-      "frases": [
-        { "texto": "Primeira frase." },
-        { "texto": "Segunda frase." }
-      ]
-    }
-  ]
-}</pre>
-      </section>
+{ "titulo": "Meu texto", "paragrafos": [ "Primeiro parágrafo.", "Segundo parágrafo." ] } ]</pre> <pre class="modelo-json">{ "titulo": "Meu texto", "paragrafos": [ { "id": "p001", "texto": "Primeiro parágrafo completo.", "frases": [ { "texto": "Primeira frase." }, { "texto": "Segunda frase." } ] } ] }</pre> </section>
 
-      <section class="area-montagem vazia" id="area-montagem" hidden></section>
-      <section class="area-palavras card" id="area-palavras" hidden></section>
+<section class="area-montagem vazia" id="area-montagem" hidden></section>
+  <section class="area-palavras card" id="area-palavras" hidden></section>
 
-      <div class="feedback" id="feedback"></div>
+  <div class="feedback" id="feedback"></div>
 
-      <div class="rodape-treino">
-        <button class="btn secundario" id="btn-reiniciar" type="button" hidden>Reiniciar</button>
-        <button class="btn primario" id="btn-proximo" type="button">Próxima frase</button>
-      </div>
-    </main>
+  <div class="rodape-treino">
+    <button class="btn secundario" id="btn-reiniciar" type="button" hidden>Reiniciar</button>
+    <button class="btn primario" id="btn-proximo" type="button">Próximo trecho</button>
   </div>
+</main>
 
-  <script>
+  </div>  <script>
     const estado = {
       textos: [],
       textoAtualIndex: 0,
@@ -450,6 +425,9 @@
       palavrasSelecionadas: [],
       erros: 0,
     };
+
+    const MAX_PALAVRAS_POR_TRECHO = 12;
+    const MIN_PALAVRAS_POR_TRECHO = 5;
 
     const inputJson = document.getElementById('input-json');
     const selectTexto = document.getElementById('select-texto');
@@ -586,7 +564,7 @@
         return {
           titulo,
           paragrafos,
-          frases,
+          frases: fragmentarListaDeTextos(frases),
           origem: nomeOrigem,
         };
       });
@@ -603,12 +581,85 @@
         .trim();
     }
 
+    function fragmentarListaDeTextos(lista) {
+      return lista.flatMap(texto => quebrarTextoEmTrechos(texto, MAX_PALAVRAS_POR_TRECHO));
+    }
+
+    function quebrarTextoEmTrechos(texto, maxPalavras) {
+      const palavras = separarPalavras(texto);
+      const total = palavras.length;
+
+      if (total <= maxPalavras) {
+        return [limparTexto(texto)];
+      }
+
+      const quantidadeTrechos = Math.ceil(total / maxPalavras);
+      const tamanhoAlvo = total / quantidadeTrechos;
+      const cortes = [];
+      let corteAnterior = 0;
+
+      for (let parte = 1; parte < quantidadeTrechos; parte++) {
+        const corteIdeal = Math.round(parte * tamanhoAlvo);
+        const cortesRestantes = quantidadeTrechos - parte;
+        const minimo = Math.max(corteAnterior + MIN_PALAVRAS_POR_TRECHO, 1);
+        const maximo = Math.min(total - cortesRestantes * MIN_PALAVRAS_POR_TRECHO, total - 1);
+        const corte = escolherMelhorCorte(palavras, corteIdeal, minimo, maximo);
+
+        cortes.push(corte);
+        corteAnterior = corte;
+      }
+
+      const trechos = [];
+      let inicio = 0;
+
+      [...cortes, total].forEach(fim => {
+        const trecho = palavras.slice(inicio, fim).join(' ').trim();
+        if (trecho) trechos.push(trecho);
+        inicio = fim;
+      });
+
+      return trechos;
+    }
+
+    function escolherMelhorCorte(palavras, corteIdeal, minimo, maximo) {
+      const candidatos = [];
+
+      for (let i = minimo; i <= maximo; i++) {
+        const palavraAntesDoCorte = palavras[i - 1] || '';
+        if (terminaComPontuacaoDeCorte(palavraAntesDoCorte)) {
+          candidatos.push(i);
+        }
+      }
+
+      if (!candidatos.length) {
+        return Math.max(minimo, Math.min(maximo, corteIdeal));
+      }
+
+      return candidatos.reduce((melhor, atual) => {
+        const distanciaMelhor = Math.abs(melhor - corteIdeal);
+        const distanciaAtual = Math.abs(atual - corteIdeal);
+        return distanciaAtual < distanciaMelhor ? atual : melhor;
+      }, candidatos[0]);
+    }
+
+    function terminaComPontuacaoDeCorte(palavra) {
+      let texto = palavra.trim();
+      const envoltorios = ['"', "'", '”', '’', ')', ']', '}'];
+
+      while (texto && envoltorios.includes(texto[texto.length - 1])) {
+        texto = texto.slice(0, -1);
+      }
+
+      const ultimo = texto[texto.length - 1];
+      return ['.', ',', ';', ':', '?', '!', '…'].includes(ultimo);
+    }
+
     function obterUnidadesTexto(texto) {
       return estado.modo === 'paragrafos' ? texto.paragrafos : texto.frases;
     }
 
     function rotuloModo() {
-      return estado.modo === 'paragrafos' ? 'Parágrafo' : 'Frase';
+      return estado.modo === 'paragrafos' ? 'Parágrafo' : 'Trecho';
     }
 
     function popularSelectTextos() {
@@ -617,7 +668,7 @@
       estado.textos.forEach((texto, index) => {
         const option = document.createElement('option');
         option.value = String(index);
-        option.textContent = `${texto.titulo} (${texto.frases.length} frases / ${texto.paragrafos.length} parágrafos)`;
+        option.textContent = `${texto.titulo} (${texto.frases.length} trechos / ${texto.paragrafos.length} parágrafos)`;;
         selectTexto.appendChild(option);
       });
 
@@ -834,6 +885,5 @@
       erroArquivo.style.display = 'none';
       erroArquivo.textContent = '';
     }
-  </script>
-</body>
+  </script></body>
 </html>
