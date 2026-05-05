@@ -155,14 +155,18 @@ main {
 }
 
 .topo-treino {
-  padding: 18px;
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  padding: 14px 18px 16px;
   display: grid;
   gap: 10px;
+  backdrop-filter: blur(8px);
 }
 
 .titulo-texto {
   margin: 0;
-  font-size: clamp(1.2rem, 3vw, 1.7rem);
+  font-size: clamp(1.08rem, 2.6vw, 1.45rem);
   text-align: center;
   color: #243746;
 }
@@ -197,11 +201,55 @@ main {
   margin: 0;
   color: var(--muted);
   text-align: center;
-  font-size: 0.98rem;
+  font-size: 0.95rem;
+}
+
+.texto-revelado {
+  padding: 18px;
+  display: grid;
+  gap: 10px;
+}
+
+.texto-revelado h3 {
+  margin: 0;
+  color: #243746;
+  font-size: 1rem;
+  letter-spacing: 0.02em;
+  text-transform: uppercase;
+}
+
+.texto-corrido {
+  min-height: 56px;
+  padding: 16px;
+  border-radius: 16px;
+  background: linear-gradient(180deg, #fbfdff 0%, #f3f8fb 100%);
+  border: 1px solid #dce8ef;
+  color: #21313b;
+  font-size: clamp(1.02rem, 2.4vw, 1.18rem);
+  line-height: 1.8;
+}
+
+.texto-corrido.vazio {
+  color: #91a1aa;
+  font-weight: 700;
+}
+
+.trecho-revelado {
+  display: inline;
+  animation: aparecer 0.24s ease-out;
+}
+
+.trecho-revelado + .trecho-revelado::before {
+  content: " ";
+}
+
+.trecho-revelado.paragrafo {
+  display: block;
+  margin-bottom: 0.9rem;
 }
 
 .area-montagem {
-  min-height: 138px;
+  min-height: 74px;
   padding: 16px;
   display: flex;
   flex-wrap: wrap;
@@ -210,6 +258,7 @@ main {
   background: #ffffff;
   border: 2px dashed #c8d5df;
   border-radius: var(--radius);
+  transition: min-height 0.18s ease, padding 0.18s ease;
 }
 
 .area-montagem.vazia::before {
@@ -219,13 +268,23 @@ main {
 }
 
 .area-palavras {
-  min-height: 130px;
+  min-height: 98px;
   padding: 18px;
   display: flex;
   flex-wrap: wrap;
   justify-content: center;
   align-content: flex-start;
   gap: 10px;
+  transition: min-height 0.18s ease, padding 0.18s ease;
+}
+
+.area-palavras.vazia {
+  min-height: 0;
+  padding-top: 0;
+  padding-bottom: 0;
+  border-color: transparent;
+  box-shadow: none;
+  background: transparent;
 }
 
 .chip {
@@ -260,8 +319,7 @@ main {
 }
 
 .chip.oculta {
-  visibility: hidden;
-  pointer-events: none;
+  display: none;
 }
 
 .chip.erro {
@@ -293,6 +351,12 @@ main {
 
 .btn.secundario {
   background: #fff;
+}
+
+.btn.compacto {
+  justify-self: center;
+  padding: 9px 14px;
+  font-size: 0.9rem;
 }
 
 .feedback {
@@ -336,6 +400,17 @@ main {
   100% { transform: translateX(0); }
 }
 
+@keyframes aparecer {
+  from {
+    opacity: 0;
+    background: #eaffdf;
+  }
+  to {
+    opacity: 1;
+    background: transparent;
+  }
+}
+
 @media (max-width: 560px) {
   .app {
     padding: 14px;
@@ -344,7 +419,8 @@ main {
   .painel-arquivo,
   .topo-treino,
   .area-palavras,
-  .area-montagem {
+  .area-montagem,
+  .texto-revelado {
     border-radius: 14px;
   }
 
@@ -360,7 +436,7 @@ main {
   <div class="app">
     <header>
       <h1>Memorizador de Textos</h1>
-      <p class="subtitulo">Escolha um JSON e monte cada trecho clicando nas palavras, como num exercício de tradução.</p><section class="painel-arquivo" aria-label="Carregamento de arquivo JSON">
+      <p class="subtitulo">Escolha um JSON e monte cada trecho clicando nas palavras, como num exercício de tradução.</p><section class="painel-arquivo" id="painel-arquivo" aria-label="Carregamento de arquivo JSON">
     <div class="linha-controles">
       <label class="file-label" for="input-json">Selecionar JSON</label>
       <input id="input-json" type="file" accept=".json,application/json" multiple />
@@ -378,6 +454,8 @@ main {
     <p class="ajuda" id="nome-arquivo">Você pode selecionar um ou mais arquivos .json.</p>
     <p class="erro-arquivo" id="erro-arquivo"></p>
   </section>
+
+  <button class="btn secundario compacto" id="btn-mostrar-arquivo" type="button" hidden>Trocar JSON / texto</button>
 </header>
 
 <main>
@@ -394,7 +472,7 @@ main {
       <div id="barra-progresso"></div>
     </div>
 
-    <p class="instrucao">Escolha a próxima palavra correta. Para desfazer, clique na última palavra montada.</p>
+    <p class="instrucao">Escolha a próxima palavra correta. Ao acertar, o trecho vira texto revelado.</p>
   </section>
 
   <section class="card tela-vazia" id="tela-vazia">
@@ -404,7 +482,12 @@ main {
 
 { "titulo": "Meu texto", "paragrafos": [ "Primeiro parágrafo.", "Segundo parágrafo." ] } ]</pre> <pre class="modelo-json">{ "titulo": "Meu texto", "paragrafos": [ { "id": "p001", "texto": "Primeiro parágrafo completo.", "frases": [ { "texto": "Primeira frase." }, { "texto": "Segunda frase." } ] } ] }</pre> </section>
 
-<section class="area-montagem vazia" id="area-montagem" hidden></section>
+<section class="card texto-revelado" id="texto-revelado" hidden>
+    <h3>Texto revelado</h3>
+    <div class="texto-corrido vazio" id="texto-corrido">Complete o primeiro trecho para começar a revelar o texto.</div>
+  </section>
+
+  <section class="area-montagem vazia" id="area-montagem" hidden></section>
   <section class="area-palavras card" id="area-palavras" hidden></section>
 
   <div class="feedback" id="feedback"></div>
@@ -423,6 +506,8 @@ main {
       modo: 'frases',
       palavrasOriginais: [],
       palavrasSelecionadas: [],
+      unidadesReveladas: [],
+      unidadeAtualTexto: '',
       erros: 0,
     };
 
@@ -430,6 +515,8 @@ main {
     const MIN_PALAVRAS_POR_TRECHO = 5;
 
     const inputJson = document.getElementById('input-json');
+    const painelArquivo = document.getElementById('painel-arquivo');
+    const btnMostrarArquivo = document.getElementById('btn-mostrar-arquivo');
     const selectTexto = document.getElementById('select-texto');
     const selectModo = document.getElementById('select-modo');
     const nomeArquivo = document.getElementById('nome-arquivo');
@@ -437,6 +524,8 @@ main {
 
     const painelTreino = document.getElementById('painel-treino');
     const telaVazia = document.getElementById('tela-vazia');
+    const textoRevelado = document.getElementById('texto-revelado');
+    const textoCorrido = document.getElementById('texto-corrido');
     const elTitulo = document.getElementById('titulo-texto');
     const elRotuloUnidade = document.getElementById('rotulo-unidade');
     const elUnidadeAtual = document.getElementById('unidade-atual');
@@ -450,6 +539,7 @@ main {
     const btnReiniciar = document.getElementById('btn-reiniciar');
 
     inputJson.addEventListener('change', carregarArquivosJson);
+    btnMostrarArquivo.addEventListener('click', mostrarPainelArquivo);
     selectTexto.addEventListener('change', trocarTextoSelecionado);
     selectModo.addEventListener('change', trocarModoTreino);
     btnProximo.addEventListener('click', proximaUnidade);
@@ -481,13 +571,16 @@ main {
         estado.textos = textosCarregados;
         estado.textoAtualIndex = 0;
         estado.unidadeAtualIndex = 0;
+        estado.unidadesReveladas = [];
         popularSelectTextos();
         nomeArquivo.textContent = `Carregado: ${nomes.join(', ')}`;
         carregarUnidade();
+        ocultarPainelArquivo();
       }
 
       if (erros.length) {
         mostrarErro(erros.join(' | '));
+        mostrarPainelArquivo();
       }
 
       inputJson.value = '';
@@ -662,13 +755,23 @@ main {
       return estado.modo === 'paragrafos' ? 'Parágrafo' : 'Trecho';
     }
 
+    function ocultarPainelArquivo() {
+      painelArquivo.hidden = true;
+      btnMostrarArquivo.hidden = false;
+    }
+
+    function mostrarPainelArquivo() {
+      painelArquivo.hidden = false;
+      btnMostrarArquivo.hidden = true;
+    }
+
     function popularSelectTextos() {
       selectTexto.innerHTML = '';
 
       estado.textos.forEach((texto, index) => {
         const option = document.createElement('option');
         option.value = String(index);
-        option.textContent = `${texto.titulo} (${texto.frases.length} trechos / ${texto.paragrafos.length} parágrafos)`;;
+        option.textContent = `${texto.titulo} (${texto.frases.length} trechos / ${texto.paragrafos.length} parágrafos)`;
         selectTexto.appendChild(option);
       });
 
@@ -680,14 +783,20 @@ main {
 
     function trocarTextoSelecionado() {
       estado.textoAtualIndex = Number(selectTexto.value);
-      estado.unidadeAtualIndex = 0;
+      reiniciarFluxoDoTexto();
       carregarUnidade();
     }
 
     function trocarModoTreino() {
       estado.modo = selectModo.value;
-      estado.unidadeAtualIndex = 0;
+      reiniciarFluxoDoTexto();
       carregarUnidade();
+    }
+
+    function reiniciarFluxoDoTexto() {
+      estado.unidadeAtualIndex = 0;
+      estado.unidadesReveladas = [];
+      renderizarTextoRevelado();
     }
 
     function carregarUnidade() {
@@ -697,6 +806,7 @@ main {
       const unidades = obterUnidadesTexto(texto);
       const unidadeAtual = unidades[estado.unidadeAtualIndex];
 
+      estado.unidadeAtualTexto = unidadeAtual;
       estado.palavrasOriginais = separarPalavras(unidadeAtual);
       estado.palavrasSelecionadas = [];
       estado.erros = 0;
@@ -706,18 +816,20 @@ main {
       elUnidadeAtual.textContent = estado.unidadeAtualIndex + 1;
       elTotalUnidades.textContent = unidades.length;
       elContadorErros.textContent = estado.erros;
-      btnProximo.textContent = `Próxima ${rotuloModo().toLowerCase()}`;
+      btnProximo.textContent = `Próxim${rotuloModo() === 'Parágrafo' ? 'o parágrafo' : 'o trecho'}`;
       feedback.textContent = '';
       feedback.className = 'feedback';
 
       painelTreino.hidden = false;
       telaVazia.hidden = true;
+      textoRevelado.hidden = false;
       areaMontagem.hidden = false;
       areaPalavras.hidden = false;
       btnReiniciar.hidden = false;
       btnProximo.style.display = 'none';
 
-      atualizarProgressoTexto();
+      atualizarProgressoTexto(false);
+      renderizarTextoRevelado();
       renderizarMontagem();
       renderizarBancoDePalavras();
     }
@@ -731,6 +843,7 @@ main {
 
     function renderizarBancoDePalavras() {
       areaPalavras.innerHTML = '';
+      areaPalavras.classList.remove('vazia');
 
       const blocos = estado.palavrasOriginais.map((palavra, index) => ({ palavra, index }));
       embaralhar(blocos);
@@ -767,6 +880,25 @@ main {
       });
     }
 
+    function renderizarTextoRevelado() {
+      textoCorrido.innerHTML = '';
+
+      if (!estado.unidadesReveladas.length) {
+        textoCorrido.classList.add('vazio');
+        textoCorrido.textContent = 'Complete o primeiro trecho para começar a revelar o texto.';
+        return;
+      }
+
+      textoCorrido.classList.remove('vazio');
+
+      estado.unidadesReveladas.forEach(item => {
+        const span = document.createElement('span');
+        span.className = `trecho-revelado ${item.tipo === 'paragrafo' ? 'paragrafo' : ''}`.trim();
+        span.textContent = item.texto;
+        textoCorrido.appendChild(span);
+      });
+    }
+
     function verificarPalavra(btn, indexOriginal) {
       const indiceEsperado = estado.palavrasSelecionadas.length;
       const palavraEsperada = estado.palavrasOriginais[indiceEsperado];
@@ -780,6 +912,7 @@ main {
 
         btn.classList.add('oculta');
         renderizarMontagem();
+        contrairBancoSeVazio();
         atualizarFeedback('Boa.', 'ok');
 
         if (estado.palavrasSelecionadas.length === estado.palavrasOriginais.length) {
@@ -796,6 +929,13 @@ main {
       setTimeout(() => btn.classList.remove('erro'), 340);
     }
 
+    function contrairBancoSeVazio() {
+      const aindaTemPalavras = Array.from(areaPalavras.querySelectorAll('.chip'))
+        .some(btn => !btn.classList.contains('oculta'));
+
+      areaPalavras.classList.toggle('vazia', !aindaTemPalavras);
+    }
+
     function desfazerUltimaPalavra() {
       const removida = estado.palavrasSelecionadas.pop();
       if (!removida) return;
@@ -805,13 +945,26 @@ main {
         botaoOriginal.classList.remove('oculta');
       }
 
+      areaPalavras.classList.remove('vazia');
       btnProximo.style.display = 'none';
       atualizarFeedback('Última palavra removida.', '');
       renderizarMontagem();
     }
 
     function concluirUnidade() {
-      atualizarFeedback(`${rotuloModo()} completa.`, 'ok');
+      const tipo = estado.modo === 'paragrafos' ? 'paragrafo' : 'trecho';
+      estado.unidadesReveladas.push({
+        texto: estado.unidadeAtualTexto,
+        tipo,
+      });
+
+      renderizarTextoRevelado();
+      atualizarProgressoTexto(true);
+      atualizarFeedback(`${rotuloModo()} completo.`, 'ok');
+
+      areaMontagem.hidden = true;
+      areaPalavras.hidden = true;
+      btnReiniciar.hidden = true;
       btnProximo.style.display = 'inline-block';
     }
 
@@ -828,6 +981,7 @@ main {
         if (proximoTextoExiste) {
           estado.textoAtualIndex++;
           estado.unidadeAtualIndex = 0;
+          estado.unidadesReveladas = [];
           selectTexto.value = String(estado.textoAtualIndex);
           carregarUnidade();
           return;
@@ -851,15 +1005,15 @@ main {
       telaVazia.hidden = false;
       telaVazia.innerHTML = `
         <strong>Parabéns. Você concluiu todos os textos carregados.</strong>
-        <p>Escolha outro JSON ou selecione novamente um texto no menu para treinar de novo.</p>
+        <p>O texto revelado continua acima para revisão. Use “Trocar JSON / texto” para carregar outro arquivo ou mudar o modo.</p>
       `;
     }
 
-    function atualizarProgressoTexto() {
+    function atualizarProgressoTexto(contarAtualComoConcluido) {
       const texto = estado.textos[estado.textoAtualIndex];
       const total = obterUnidadesTexto(texto).length;
-      const atual = estado.unidadeAtualIndex + 1;
-      const progresso = total <= 0 ? 0 : (atual / total) * 100;
+      const concluidas = estado.unidadeAtualIndex + (contarAtualComoConcluido ? 1 : 0);
+      const progresso = total <= 0 ? 0 : (concluidas / total) * 100;
       barraProgresso.style.width = `${Math.max(0, Math.min(100, progresso))}%`;
     }
 
