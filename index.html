@@ -1,1043 +1,122 @@
-<!DOCTYPE html><html lang="pt-BR">
+<!DOCTYPE html>
+<html lang="pt-BR">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Memorizador de Textos</title>
-  <style>
-    :root {
-      --bg: #f4f7fb;
-      --card: #ffffff;
-      --text: #263238;
-      --muted: #6b7c86;
-      --line: #d8e1e8;
-      --primary: #1cb0f6;
-      --primary-dark: #1495d1;
-      --success: #58cc02;
-      --success-dark: #46a302;
-      --danger: #ff4b4b;
-      --shadow: 0 8px 20px rgba(38, 50, 56, 0.08);
-      --radius: 18px;
-    }* {
-  box-sizing: border-box;
-}
-
-body {
-  margin: 0;
-  font-family: Inter, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
-  background: var(--bg);
-  color: var(--text);
-}
-
-.app {
-  width: min(920px, 100%);
-  margin: 0 auto;
-  padding: 20px;
-}
-
-header {
-  display: grid;
-  gap: 14px;
-  margin-bottom: 18px;
-}
-
-h1 {
-  margin: 0;
-  font-size: clamp(1.8rem, 4vw, 2.6rem);
-  line-height: 1;
-  color: #243746;
-  text-align: center;
-}
-
-.subtitulo {
-  margin: 0;
-  color: var(--muted);
-  text-align: center;
-  font-size: 0.98rem;
-}
-
-.painel-arquivo,
-.card {
-  background: var(--card);
-  border: 1px solid var(--line);
-  border-radius: var(--radius);
-  box-shadow: var(--shadow);
-}
-
-.painel-arquivo {
-  display: grid;
-  gap: 12px;
-  padding: 16px;
-}
-
-.linha-controles {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  align-items: center;
-  justify-content: center;
-}
-
-.file-label,
-.btn {
-  appearance: none;
-  border: 0;
-  border-radius: 999px;
-  padding: 12px 18px;
-  font-size: 1rem;
-  font-weight: 800;
-  cursor: pointer;
-  transition: transform 0.12s ease, filter 0.12s ease, background 0.12s ease;
-  text-decoration: none;
-  user-select: none;
-}
-
-.file-label {
-  background: var(--primary);
-  color: white;
-  box-shadow: 0 4px 0 var(--primary-dark);
-}
-
-.file-label:hover,
-.btn:hover {
-  filter: brightness(0.98);
-  transform: translateY(-1px);
-}
-
-.file-label:active,
-.btn:active {
-  transform: translateY(2px);
-  box-shadow: none;
-}
-
-input[type="file"] {
-  position: absolute;
-  width: 1px;
-  height: 1px;
-  padding: 0;
-  margin: -1px;
-  overflow: hidden;
-  clip: rect(0, 0, 0, 0);
-  white-space: nowrap;
-  border: 0;
-}
-
-select {
-  min-width: min(100%, 280px);
-  padding: 12px 14px;
-  border: 1px solid var(--line);
-  border-radius: 12px;
-  background: #fff;
-  color: var(--text);
-  font-size: 1rem;
-}
-
-.ajuda {
-  margin: 0;
-  text-align: center;
-  color: var(--muted);
-  font-size: 0.92rem;
-}
-
-.erro-arquivo {
-  display: none;
-  margin: 0;
-  padding: 10px 12px;
-  border-radius: 12px;
-  background: #ffe8e8;
-  color: #a81919;
-  font-weight: 700;
-  text-align: center;
-}
-
-main {
-  display: grid;
-  gap: 16px;
-}
-
-.topo-treino {
-  position: sticky;
-  top: 0;
-  z-index: 20;
-  padding: 14px 18px 16px;
-  display: grid;
-  gap: 10px;
-  backdrop-filter: blur(8px);
-}
-
-.titulo-texto {
-  margin: 0;
-  font-size: clamp(1.08rem, 2.6vw, 1.45rem);
-  text-align: center;
-  color: #243746;
-}
-
-.status {
-  display: flex;
-  gap: 10px;
-  align-items: center;
-  justify-content: center;
-  flex-wrap: wrap;
-  color: var(--muted);
-  font-weight: 800;
-}
-
-.barra-progresso {
-  width: 100%;
-  height: 15px;
-  background: #e8eef3;
-  border-radius: 999px;
-  overflow: hidden;
-}
-
-.barra-progresso > div {
-  width: 0%;
-  height: 100%;
-  background: var(--success);
-  border-radius: inherit;
-  transition: width 0.25s ease;
-}
-
-.instrucao {
-  margin: 0;
-  color: var(--muted);
-  text-align: center;
-  font-size: 0.95rem;
-}
-
-.texto-revelado {
-  padding: 18px;
-  display: grid;
-  gap: 10px;
-}
-
-.texto-revelado h3 {
-  margin: 0;
-  color: #243746;
-  font-size: 1rem;
-  letter-spacing: 0.02em;
-  text-transform: uppercase;
-}
-
-.texto-corrido {
-  min-height: 56px;
-  padding: 16px;
-  border-radius: 16px;
-  background: linear-gradient(180deg, #fbfdff 0%, #f3f8fb 100%);
-  border: 1px solid #dce8ef;
-  color: #21313b;
-  font-size: clamp(1.02rem, 2.4vw, 1.18rem);
-  line-height: 1.8;
-}
-
-.texto-corrido.vazio {
-  color: #91a1aa;
-  font-weight: 700;
-}
-
-.trecho-revelado {
-  display: inline;
-  animation: aparecer 0.24s ease-out;
-}
-
-.trecho-revelado + .trecho-revelado::before {
-  content: " ";
-}
-
-.trecho-revelado.paragrafo {
-  display: block;
-  margin-bottom: 0.9rem;
-}
-
-.area-montagem {
-  min-height: 74px;
-  padding: 16px;
-  display: flex;
-  flex-wrap: wrap;
-  align-content: flex-start;
-  gap: 10px;
-  background: #ffffff;
-  border: 2px dashed #c8d5df;
-  border-radius: var(--radius);
-  transition: min-height 0.18s ease, padding 0.18s ease;
-}
-
-.area-montagem.vazia::before {
-  content: "Monte o trecho aqui...";
-  color: #9aa8b0;
-  font-weight: 700;
-}
-
-.area-palavras {
-  min-height: 98px;
-  padding: 18px;
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  align-content: flex-start;
-  gap: 10px;
-  transition: min-height 0.18s ease, padding 0.18s ease;
-}
-
-.area-palavras.vazia {
-  min-height: 0;
-  padding-top: 0;
-  padding-bottom: 0;
-  border-color: transparent;
-  box-shadow: none;
-  background: transparent;
-}
-
-.chip {
-  border: 2px solid #d6e2ea;
-  border-radius: 14px;
-  background: #fff;
-  color: var(--text);
-  padding: 10px 14px;
-  min-height: 44px;
-  font-size: 1.02rem;
-  font-weight: 800;
-  line-height: 1.1;
-  cursor: pointer;
-  box-shadow: 0 4px 0 #d6e2ea;
-  transition: transform 0.12s ease, box-shadow 0.12s ease, background 0.12s ease, opacity 0.12s ease;
-}
-
-.chip:hover {
-  transform: translateY(-1px);
-  background: #f7fbff;
-}
-
-.chip:active {
-  transform: translateY(2px);
-  box-shadow: 0 1px 0 #d6e2ea;
-}
-
-.chip.selecionada {
-  background: #e9f8ff;
-  border-color: var(--primary);
-  box-shadow: 0 4px 0 var(--primary-dark);
-}
-
-.chip.oculta {
-  display: none;
-}
-
-.chip.erro {
-  border-color: var(--danger);
-  background: #fff0f0;
-  animation: tremer 0.32s;
-}
-
-.rodape-treino {
-  display: flex;
-  justify-content: center;
-  gap: 10px;
-  flex-wrap: wrap;
-  padding: 6px 0 24px;
-}
-
-.btn {
-  background: #edf4f8;
-  color: #314958;
-  box-shadow: 0 4px 0 #cbd9e2;
-}
-
-.btn.primario {
-  display: none;
-  background: var(--success);
-  color: #fff;
-  box-shadow: 0 4px 0 var(--success-dark);
-}
-
-.btn.secundario {
-  background: #fff;
-}
-
-.btn.compacto {
-  justify-self: center;
-  padding: 9px 14px;
-  font-size: 0.9rem;
-}
-
-.feedback {
-  min-height: 28px;
-  text-align: center;
-  font-weight: 900;
-  color: var(--muted);
-}
-
-.feedback.ok {
-  color: var(--success-dark);
-}
-
-.feedback.erro {
-  color: #cc2525;
-}
-
-.tela-vazia {
-  padding: 28px;
-  text-align: center;
-  color: var(--muted);
-}
-
-.modelo-json {
-  width: 100%;
-  overflow: auto;
-  margin: 12px 0 0;
-  padding: 14px;
-  border-radius: 14px;
-  background: #17212b;
-  color: #e9f2f9;
-  text-align: left;
-  font-size: 0.85rem;
-}
-
-@keyframes tremer {
-  0% { transform: translateX(0); }
-  25% { transform: translateX(-5px); }
-  50% { transform: translateX(5px); }
-  75% { transform: translateX(-5px); }
-  100% { transform: translateX(0); }
-}
-
-@keyframes aparecer {
-  from {
-    opacity: 0;
-    background: #eaffdf;
-  }
-  to {
-    opacity: 1;
-    background: transparent;
-  }
-}
-
-@media (max-width: 560px) {
-  .app {
-    padding: 14px;
-  }
-
-  .painel-arquivo,
-  .topo-treino,
-  .area-palavras,
-  .area-montagem,
-  .texto-revelado {
-    border-radius: 14px;
-  }
-
-  .chip {
-    font-size: 0.95rem;
-    padding: 9px 11px;
-  }
-}
-
-  </style>
+  <link rel="stylesheet" href="style.css" />
+  <script src="app.js" defer></script>
 </head>
 <body>
   <div class="app">
     <header>
       <h1>Memorizador de Textos</h1>
-      <p class="subtitulo">Escolha um JSON e monte cada trecho clicando nas palavras, como num exercício de tradução.</p><section class="painel-arquivo" id="painel-arquivo" aria-label="Carregamento de arquivo JSON">
-    <div class="linha-controles">
-      <label class="file-label" for="input-json">Selecionar JSON</label>
-      <input id="input-json" type="file" accept=".json,application/json" multiple />
+      <p class="subtitulo">Escolha um JSON, selecione uma fase e monte cada trecho clicando nas palavras.</p>
 
-      <select id="select-texto" disabled>
-        <option value="">Nenhum texto carregado</option>
-      </select>
+      <section class="painel-arquivo" id="painel-arquivo" aria-label="Carregamento de arquivos JSON">
+        <div class="linha-controles">
+          <label class="file-label" for="input-json">Selecionar livro JSON</label>
+          <input id="input-json" type="file" accept=".json,application/json" multiple />
 
-      <select id="select-modo" disabled>
-        <option value="frases">Treinar por trechos/frases</option>
-        <option value="paragrafos">Treinar por parágrafos</option>
-      </select>
-    </div>
+          <label class="file-label alternativa" for="input-progresso">Importar progresso</label>
+          <input id="input-progresso" type="file" accept=".json,application/json" />
 
-    <p class="ajuda" id="nome-arquivo">Você pode selecionar um ou mais arquivos .json.</p>
-    <p class="erro-arquivo" id="erro-arquivo"></p>
-  </section>
+          <button class="btn secundario" id="btn-baixar-progresso" type="button">Baixar progresso</button>
+        </div>
 
-  <button class="btn secundario compacto" id="btn-mostrar-arquivo" type="button" hidden>Trocar JSON / texto</button>
-</header>
+        <div class="linha-controles">
+          <select id="select-texto" disabled>
+            <option value="">Nenhum texto carregado</option>
+          </select>
 
-<main>
-  <section class="card topo-treino" id="painel-treino" hidden>
-    <h2 class="titulo-texto" id="titulo-texto"></h2>
+          <select id="select-modo" disabled>
+            <option value="frases">Treinar por trechos/frases</option>
+            <option value="paragrafos">Treinar por parágrafos</option>
+          </select>
+        </div>
 
-    <div class="status">
-      <span><span id="rotulo-unidade">Trecho</span> <span id="unidade-atual">0</span> de <span id="total-unidades">0</span></span>
-      <span>•</span>
-      <span>Erros: <span id="contador-erros">0</span></span>
-    </div>
+        <p class="ajuda" id="nome-arquivo">Você pode selecionar um ou mais arquivos de livro .json. O progresso pode ser salvo e restaurado por outro JSON.</p>
+        <p class="erro-arquivo" id="erro-arquivo"></p>
+      </section>
 
-    <div class="barra-progresso" aria-label="Progresso do texto">
-      <div id="barra-progresso"></div>
-    </div>
+      <button class="btn secundario compacto" id="btn-mostrar-arquivo" type="button" hidden>Trocar JSON / texto</button>
+    </header>
 
-    <p class="instrucao">Escolha a próxima palavra correta. Ao acertar, o trecho vira texto revelado.</p>
-  </section>
+    <main>
+      <section class="card painel-fases" id="painel-fases" hidden>
+        <h3>Fases</h3>
+        <div class="linha-controles">
+          <select id="select-fase" disabled>
+            <option value="">Nenhuma fase disponível</option>
+          </select>
+          <button class="btn secundario" id="btn-repetir-fase" type="button">Repetir fase atual</button>
+          <button class="btn secundario" id="btn-baixar-progresso-fases" type="button">Baixar progresso</button>
+        </div>
+        <p class="resumo-fase" id="resumo-fase">Cada parágrafo vira uma fase. As fases com mais erros aparecem destacadas.</p>
+        <div class="fases-grid" id="lista-fases"></div>
+      </section>
 
-  <section class="card tela-vazia" id="tela-vazia">
-    <strong>Nenhum texto carregado ainda.</strong>
-    <p>Este app aceita os dois formatos abaixo:</p>
-    <pre class="modelo-json">[
+      <section class="card topo-treino" id="painel-treino" hidden>
+        <h2 class="titulo-texto" id="titulo-texto"></h2>
 
-{ "titulo": "Meu texto", "paragrafos": [ "Primeiro parágrafo.", "Segundo parágrafo." ] } ]</pre> <pre class="modelo-json">{ "titulo": "Meu texto", "paragrafos": [ { "id": "p001", "texto": "Primeiro parágrafo completo.", "frases": [ { "texto": "Primeira frase." }, { "texto": "Segunda frase." } ] } ] }</pre> </section>
+        <div class="status">
+          <span>Fase <span id="fase-atual">0</span> de <span id="total-fases">0</span></span>
+          <span>•</span>
+          <span><span id="rotulo-unidade">Trecho</span> <span id="unidade-atual">0</span> de <span id="total-unidades">0</span></span>
+          <span>•</span>
+          <span>Erros neste trecho: <span id="contador-erros">0</span></span>
+        </div>
 
-<section class="card texto-revelado" id="texto-revelado" hidden>
-    <h3>Texto revelado</h3>
-    <div class="texto-corrido vazio" id="texto-corrido">Complete o primeiro trecho para começar a revelar o texto.</div>
-  </section>
+        <div class="barra-progresso" aria-label="Progresso da fase">
+          <div id="barra-progresso"></div>
+        </div>
 
-  <section class="area-montagem vazia" id="area-montagem" hidden></section>
-  <section class="area-palavras card" id="area-palavras" hidden></section>
+        <p class="instrucao">A palavra errada fica vermelha até você acertar a próxima. Ela só conta erro uma vez nesse ciclo.</p>
+      </section>
 
-  <div class="feedback" id="feedback"></div>
+      <section class="card tela-vazia" id="tela-vazia">
+        <strong>Nenhum texto carregado ainda.</strong>
+        <p>Este app aceita os dois formatos abaixo:</p>
+        <pre class="modelo-json">[
+  {
+    "titulo": "Meu texto",
+    "paragrafos": [
+      "Primeiro parágrafo.",
+      "Segundo parágrafo."
+    ]
+  }
+]</pre>
+        <pre class="modelo-json">{
+  "titulo": "Meu texto",
+  "paragrafos": [
+    {
+      "id": "p001",
+      "texto": "Primeiro parágrafo completo.",
+      "frases": [
+        { "texto": "Primeira frase." },
+        { "texto": "Segunda frase." }
+      ]
+    }
+  ]
+}</pre>
+      </section>
 
-  <div class="rodape-treino">
-    <button class="btn secundario" id="btn-reiniciar" type="button" hidden>Reiniciar</button>
-    <button class="btn primario" id="btn-proximo" type="button">Próximo trecho</button>
+      <section class="card texto-revelado" id="texto-revelado" hidden>
+        <h3>Texto revelado da fase</h3>
+        <div class="texto-corrido vazio" id="texto-corrido">Complete o primeiro trecho para começar a revelar o parágrafo.</div>
+      </section>
+
+      <section class="area-montagem vazia" id="area-montagem" hidden></section>
+      <section class="area-palavras card" id="area-palavras" hidden></section>
+
+      <div class="feedback" id="feedback"></div>
+
+      <div class="rodape-treino">
+        <button class="btn secundario" id="btn-anterior" type="button" hidden>Voltar</button>
+        <button class="btn secundario" id="btn-reiniciar" type="button" hidden>Reiniciar trecho</button>
+        <button class="btn primario" id="btn-proximo" type="button">Próximo trecho</button>
+      </div>
+    </main>
   </div>
-</main>
-
-  </div>  <script>
-    const estado = {
-      textos: [],
-      textoAtualIndex: 0,
-      unidadeAtualIndex: 0,
-      modo: 'frases',
-      palavrasOriginais: [],
-      palavrasSelecionadas: [],
-      unidadesReveladas: [],
-      unidadeAtualTexto: '',
-      erros: 0,
-    };
-
-    const MAX_PALAVRAS_POR_TRECHO = 12;
-    const MIN_PALAVRAS_POR_TRECHO = 5;
-
-    const inputJson = document.getElementById('input-json');
-    const painelArquivo = document.getElementById('painel-arquivo');
-    const btnMostrarArquivo = document.getElementById('btn-mostrar-arquivo');
-    const selectTexto = document.getElementById('select-texto');
-    const selectModo = document.getElementById('select-modo');
-    const nomeArquivo = document.getElementById('nome-arquivo');
-    const erroArquivo = document.getElementById('erro-arquivo');
-
-    const painelTreino = document.getElementById('painel-treino');
-    const telaVazia = document.getElementById('tela-vazia');
-    const textoRevelado = document.getElementById('texto-revelado');
-    const textoCorrido = document.getElementById('texto-corrido');
-    const elTitulo = document.getElementById('titulo-texto');
-    const elRotuloUnidade = document.getElementById('rotulo-unidade');
-    const elUnidadeAtual = document.getElementById('unidade-atual');
-    const elTotalUnidades = document.getElementById('total-unidades');
-    const elContadorErros = document.getElementById('contador-erros');
-    const barraProgresso = document.getElementById('barra-progresso');
-    const areaMontagem = document.getElementById('area-montagem');
-    const areaPalavras = document.getElementById('area-palavras');
-    const feedback = document.getElementById('feedback');
-    const btnProximo = document.getElementById('btn-proximo');
-    const btnReiniciar = document.getElementById('btn-reiniciar');
-
-    inputJson.addEventListener('change', carregarArquivosJson);
-    btnMostrarArquivo.addEventListener('click', mostrarPainelArquivo);
-    selectTexto.addEventListener('change', trocarTextoSelecionado);
-    selectModo.addEventListener('change', trocarModoTreino);
-    btnProximo.addEventListener('click', proximaUnidade);
-    btnReiniciar.addEventListener('click', carregarUnidade);
-
-    async function carregarArquivosJson(event) {
-      limparErro();
-
-      const arquivos = Array.from(event.target.files || []);
-      if (!arquivos.length) return;
-
-      const textosCarregados = [];
-      const nomes = [];
-      const erros = [];
-
-      for (const arquivo of arquivos) {
-        try {
-          const conteudo = await arquivo.text();
-          const json = JSON.parse(conteudo);
-          const textos = normalizarJson(json, arquivo.name);
-          textosCarregados.push(...textos);
-          nomes.push(arquivo.name);
-        } catch (erro) {
-          erros.push(`${arquivo.name}: ${erro.message}`);
-        }
-      }
-
-      if (textosCarregados.length) {
-        estado.textos = textosCarregados;
-        estado.textoAtualIndex = 0;
-        estado.unidadeAtualIndex = 0;
-        estado.unidadesReveladas = [];
-        popularSelectTextos();
-        nomeArquivo.textContent = `Carregado: ${nomes.join(', ')}`;
-        carregarUnidade();
-        ocultarPainelArquivo();
-      }
-
-      if (erros.length) {
-        mostrarErro(erros.join(' | '));
-        mostrarPainelArquivo();
-      }
-
-      inputJson.value = '';
-    }
-
-    function normalizarJson(json, nomeOrigem) {
-      const lista = Array.isArray(json) ? json : [json];
-
-      return lista.map((item, index) => {
-        const titulo = String(item.titulo || item.title || `${nomeOrigem} — texto ${index + 1}`).trim();
-        const blocoParagrafos = item.paragrafos || item.paragraphs || item.textos || item.text || [];
-        const blocoFrasesTopo = item.frases || item.sentences || [];
-
-        const paragrafos = [];
-        const frases = [];
-        const itensParagrafo = Array.isArray(blocoParagrafos) ? blocoParagrafos : [blocoParagrafos];
-
-        itensParagrafo.forEach(itemParagrafo => {
-          if (typeof itemParagrafo === 'string') {
-            const texto = limparTexto(itemParagrafo);
-            if (texto) {
-              paragrafos.push(texto);
-              frases.push(texto);
-            }
-            return;
-          }
-
-          if (!itemParagrafo || typeof itemParagrafo !== 'object') return;
-
-          const textoParagrafo = limparTexto(
-            itemParagrafo.texto || itemParagrafo.text || itemParagrafo.conteudo || ''
-          );
-
-          if (textoParagrafo) {
-            paragrafos.push(textoParagrafo);
-          }
-
-          const frasesDoParagrafo = itemParagrafo.frases || itemParagrafo.sentences || [];
-          if (Array.isArray(frasesDoParagrafo) && frasesDoParagrafo.length) {
-            frasesDoParagrafo.forEach(itemFrase => {
-              const textoFrase = typeof itemFrase === 'string'
-                ? limparTexto(itemFrase)
-                : limparTexto(itemFrase && (itemFrase.texto || itemFrase.text || itemFrase.conteudo || ''));
-
-              if (textoFrase) frases.push(textoFrase);
-            });
-          } else if (textoParagrafo) {
-            frases.push(textoParagrafo);
-          }
-        });
-
-        if (Array.isArray(blocoFrasesTopo)) {
-          blocoFrasesTopo.forEach(itemFrase => {
-            const textoFrase = typeof itemFrase === 'string'
-              ? limparTexto(itemFrase)
-              : limparTexto(itemFrase && (itemFrase.texto || itemFrase.text || itemFrase.conteudo || ''));
-
-            if (textoFrase) frases.push(textoFrase);
-          });
-        }
-
-        if (!paragrafos.length && frases.length) {
-          paragrafos.push(...frases);
-        }
-
-        if (!frases.length && paragrafos.length) {
-          frases.push(...paragrafos);
-        }
-
-        if (!paragrafos.length && !frases.length) {
-          throw new Error('não encontrei textos válidos em paragrafos ou frases.');
-        }
-
-        return {
-          titulo,
-          paragrafos,
-          frases: fragmentarListaDeTextos(frases),
-          origem: nomeOrigem,
-        };
-      });
-    }
-
-    function limparTexto(valor) {
-      return String(valor || '')
-        .replaceAll(String.fromCharCode(13), ' ')
-        .replaceAll(String.fromCharCode(10), ' ')
-        .replaceAll(String.fromCharCode(9), ' ')
-        .split(' ')
-        .filter(Boolean)
-        .join(' ')
-        .trim();
-    }
-
-    function fragmentarListaDeTextos(lista) {
-      return lista.flatMap(texto => quebrarTextoEmTrechos(texto, MAX_PALAVRAS_POR_TRECHO));
-    }
-
-    function quebrarTextoEmTrechos(texto, maxPalavras) {
-      const palavras = separarPalavras(texto);
-      const total = palavras.length;
-
-      if (total <= maxPalavras) {
-        return [limparTexto(texto)];
-      }
-
-      const quantidadeTrechos = Math.ceil(total / maxPalavras);
-      const tamanhoAlvo = total / quantidadeTrechos;
-      const cortes = [];
-      let corteAnterior = 0;
-
-      for (let parte = 1; parte < quantidadeTrechos; parte++) {
-        const corteIdeal = Math.round(parte * tamanhoAlvo);
-        const cortesRestantes = quantidadeTrechos - parte;
-        const minimo = Math.max(corteAnterior + MIN_PALAVRAS_POR_TRECHO, 1);
-        const maximo = Math.min(total - cortesRestantes * MIN_PALAVRAS_POR_TRECHO, total - 1);
-        const corte = escolherMelhorCorte(palavras, corteIdeal, minimo, maximo);
-
-        cortes.push(corte);
-        corteAnterior = corte;
-      }
-
-      const trechos = [];
-      let inicio = 0;
-
-      [...cortes, total].forEach(fim => {
-        const trecho = palavras.slice(inicio, fim).join(' ').trim();
-        if (trecho) trechos.push(trecho);
-        inicio = fim;
-      });
-
-      return trechos;
-    }
-
-    function escolherMelhorCorte(palavras, corteIdeal, minimo, maximo) {
-      const candidatos = [];
-
-      for (let i = minimo; i <= maximo; i++) {
-        const palavraAntesDoCorte = palavras[i - 1] || '';
-        if (terminaComPontuacaoDeCorte(palavraAntesDoCorte)) {
-          candidatos.push(i);
-        }
-      }
-
-      if (!candidatos.length) {
-        return Math.max(minimo, Math.min(maximo, corteIdeal));
-      }
-
-      return candidatos.reduce((melhor, atual) => {
-        const distanciaMelhor = Math.abs(melhor - corteIdeal);
-        const distanciaAtual = Math.abs(atual - corteIdeal);
-        return distanciaAtual < distanciaMelhor ? atual : melhor;
-      }, candidatos[0]);
-    }
-
-    function terminaComPontuacaoDeCorte(palavra) {
-      let texto = palavra.trim();
-      const envoltorios = ['"', "'", '”', '’', ')', ']', '}'];
-
-      while (texto && envoltorios.includes(texto[texto.length - 1])) {
-        texto = texto.slice(0, -1);
-      }
-
-      const ultimo = texto[texto.length - 1];
-      return ['.', ',', ';', ':', '?', '!', '…'].includes(ultimo);
-    }
-
-    function obterUnidadesTexto(texto) {
-      return estado.modo === 'paragrafos' ? texto.paragrafos : texto.frases;
-    }
-
-    function rotuloModo() {
-      return estado.modo === 'paragrafos' ? 'Parágrafo' : 'Trecho';
-    }
-
-    function ocultarPainelArquivo() {
-      painelArquivo.hidden = true;
-      btnMostrarArquivo.hidden = false;
-    }
-
-    function mostrarPainelArquivo() {
-      painelArquivo.hidden = false;
-      btnMostrarArquivo.hidden = true;
-    }
-
-    function popularSelectTextos() {
-      selectTexto.innerHTML = '';
-
-      estado.textos.forEach((texto, index) => {
-        const option = document.createElement('option');
-        option.value = String(index);
-        option.textContent = `${texto.titulo} (${texto.frases.length} trechos / ${texto.paragrafos.length} parágrafos)`;
-        selectTexto.appendChild(option);
-      });
-
-      selectTexto.disabled = estado.textos.length <= 1;
-      selectModo.disabled = false;
-      selectModo.value = estado.modo;
-      selectTexto.value = '0';
-    }
-
-    function trocarTextoSelecionado() {
-      estado.textoAtualIndex = Number(selectTexto.value);
-      reiniciarFluxoDoTexto();
-      carregarUnidade();
-    }
-
-    function trocarModoTreino() {
-      estado.modo = selectModo.value;
-      reiniciarFluxoDoTexto();
-      carregarUnidade();
-    }
-
-    function reiniciarFluxoDoTexto() {
-      estado.unidadeAtualIndex = 0;
-      estado.unidadesReveladas = [];
-      renderizarTextoRevelado();
-    }
-
-    function carregarUnidade() {
-      const texto = estado.textos[estado.textoAtualIndex];
-      if (!texto) return;
-
-      const unidades = obterUnidadesTexto(texto);
-      const unidadeAtual = unidades[estado.unidadeAtualIndex];
-
-      estado.unidadeAtualTexto = unidadeAtual;
-      estado.palavrasOriginais = separarPalavras(unidadeAtual);
-      estado.palavrasSelecionadas = [];
-      estado.erros = 0;
-
-      elTitulo.textContent = texto.titulo;
-      elRotuloUnidade.textContent = rotuloModo();
-      elUnidadeAtual.textContent = estado.unidadeAtualIndex + 1;
-      elTotalUnidades.textContent = unidades.length;
-      elContadorErros.textContent = estado.erros;
-      btnProximo.textContent = `Próxim${rotuloModo() === 'Parágrafo' ? 'o parágrafo' : 'o trecho'}`;
-      feedback.textContent = '';
-      feedback.className = 'feedback';
-
-      painelTreino.hidden = false;
-      telaVazia.hidden = true;
-      textoRevelado.hidden = false;
-      areaMontagem.hidden = false;
-      areaPalavras.hidden = false;
-      btnReiniciar.hidden = false;
-      btnProximo.style.display = 'none';
-
-      atualizarProgressoTexto(false);
-      renderizarTextoRevelado();
-      renderizarMontagem();
-      renderizarBancoDePalavras();
-    }
-
-    function separarPalavras(texto) {
-      return limparTexto(texto)
-        .split(' ')
-        .map(palavra => palavra.trim())
-        .filter(Boolean);
-    }
-
-    function renderizarBancoDePalavras() {
-      areaPalavras.innerHTML = '';
-      areaPalavras.classList.remove('vazia');
-
-      const blocos = estado.palavrasOriginais.map((palavra, index) => ({ palavra, index }));
-      embaralhar(blocos);
-
-      blocos.forEach(bloco => {
-        const btn = document.createElement('button');
-        btn.type = 'button';
-        btn.className = 'chip';
-        btn.textContent = bloco.palavra;
-        btn.dataset.indexOriginal = String(bloco.index);
-        btn.addEventListener('click', () => verificarPalavra(btn, bloco.index));
-        areaPalavras.appendChild(btn);
-      });
-    }
-
-    function renderizarMontagem() {
-      areaMontagem.innerHTML = '';
-      areaMontagem.classList.toggle('vazia', estado.palavrasSelecionadas.length === 0);
-
-      estado.palavrasSelecionadas.forEach((item, posicao) => {
-        const btn = document.createElement('button');
-        btn.type = 'button';
-        btn.className = 'chip selecionada';
-        btn.textContent = item.palavra;
-        btn.title = posicao === estado.palavrasSelecionadas.length - 1
-          ? 'Clique para desfazer esta palavra'
-          : 'Só a última palavra pode ser desfeita';
-
-        if (posicao === estado.palavrasSelecionadas.length - 1) {
-          btn.addEventListener('click', desfazerUltimaPalavra);
-        }
-
-        areaMontagem.appendChild(btn);
-      });
-    }
-
-    function renderizarTextoRevelado() {
-      textoCorrido.innerHTML = '';
-
-      if (!estado.unidadesReveladas.length) {
-        textoCorrido.classList.add('vazio');
-        textoCorrido.textContent = 'Complete o primeiro trecho para começar a revelar o texto.';
-        return;
-      }
-
-      textoCorrido.classList.remove('vazio');
-
-      estado.unidadesReveladas.forEach(item => {
-        const span = document.createElement('span');
-        span.className = `trecho-revelado ${item.tipo === 'paragrafo' ? 'paragrafo' : ''}`.trim();
-        span.textContent = item.texto;
-        textoCorrido.appendChild(span);
-      });
-    }
-
-    function verificarPalavra(btn, indexOriginal) {
-      const indiceEsperado = estado.palavrasSelecionadas.length;
-      const palavraEsperada = estado.palavrasOriginais[indiceEsperado];
-      const palavraClicada = estado.palavrasOriginais[indexOriginal];
-
-      if (palavraClicada === palavraEsperada) {
-        estado.palavrasSelecionadas.push({
-          palavra: palavraEsperada,
-          indexOriginal,
-        });
-
-        btn.classList.add('oculta');
-        renderizarMontagem();
-        contrairBancoSeVazio();
-        atualizarFeedback('Boa.', 'ok');
-
-        if (estado.palavrasSelecionadas.length === estado.palavrasOriginais.length) {
-          concluirUnidade();
-        }
-
-        return;
-      }
-
-      estado.erros++;
-      elContadorErros.textContent = estado.erros;
-      btn.classList.add('erro');
-      atualizarFeedback('Ainda não. Procure a próxima palavra.', 'erro');
-      setTimeout(() => btn.classList.remove('erro'), 340);
-    }
-
-    function contrairBancoSeVazio() {
-      const aindaTemPalavras = Array.from(areaPalavras.querySelectorAll('.chip'))
-        .some(btn => !btn.classList.contains('oculta'));
-
-      areaPalavras.classList.toggle('vazia', !aindaTemPalavras);
-    }
-
-    function desfazerUltimaPalavra() {
-      const removida = estado.palavrasSelecionadas.pop();
-      if (!removida) return;
-
-      const botaoOriginal = areaPalavras.querySelector(`[data-index-original="${removida.indexOriginal}"]`);
-      if (botaoOriginal) {
-        botaoOriginal.classList.remove('oculta');
-      }
-
-      areaPalavras.classList.remove('vazia');
-      btnProximo.style.display = 'none';
-      atualizarFeedback('Última palavra removida.', '');
-      renderizarMontagem();
-    }
-
-    function concluirUnidade() {
-      const tipo = estado.modo === 'paragrafos' ? 'paragrafo' : 'trecho';
-      estado.unidadesReveladas.push({
-        texto: estado.unidadeAtualTexto,
-        tipo,
-      });
-
-      renderizarTextoRevelado();
-      atualizarProgressoTexto(true);
-      atualizarFeedback(`${rotuloModo()} completo.`, 'ok');
-
-      areaMontagem.hidden = true;
-      areaPalavras.hidden = true;
-      btnReiniciar.hidden = true;
-      btnProximo.style.display = 'inline-block';
-    }
-
-    function proximaUnidade() {
-      const texto = estado.textos[estado.textoAtualIndex];
-      if (!texto) return;
-
-      const unidades = obterUnidadesTexto(texto);
-      estado.unidadeAtualIndex++;
-
-      if (estado.unidadeAtualIndex >= unidades.length) {
-        const proximoTextoExiste = estado.textoAtualIndex + 1 < estado.textos.length;
-
-        if (proximoTextoExiste) {
-          estado.textoAtualIndex++;
-          estado.unidadeAtualIndex = 0;
-          estado.unidadesReveladas = [];
-          selectTexto.value = String(estado.textoAtualIndex);
-          carregarUnidade();
-          return;
-        }
-
-        finalizarTreino();
-        return;
-      }
-
-      carregarUnidade();
-    }
-
-    function finalizarTreino() {
-      painelTreino.hidden = true;
-      areaMontagem.hidden = true;
-      areaPalavras.hidden = true;
-      btnReiniciar.hidden = true;
-      btnProximo.style.display = 'none';
-      feedback.className = 'feedback ok';
-      feedback.textContent = 'Treino concluído.';
-      telaVazia.hidden = false;
-      telaVazia.innerHTML = `
-        <strong>Parabéns. Você concluiu todos os textos carregados.</strong>
-        <p>O texto revelado continua acima para revisão. Use “Trocar JSON / texto” para carregar outro arquivo ou mudar o modo.</p>
-      `;
-    }
-
-    function atualizarProgressoTexto(contarAtualComoConcluido) {
-      const texto = estado.textos[estado.textoAtualIndex];
-      const total = obterUnidadesTexto(texto).length;
-      const concluidas = estado.unidadeAtualIndex + (contarAtualComoConcluido ? 1 : 0);
-      const progresso = total <= 0 ? 0 : (concluidas / total) * 100;
-      barraProgresso.style.width = `${Math.max(0, Math.min(100, progresso))}%`;
-    }
-
-    function atualizarFeedback(mensagem, tipo) {
-      feedback.textContent = mensagem;
-      feedback.className = `feedback ${tipo || ''}`.trim();
-    }
-
-    function embaralhar(array) {
-      for (let i = array.length - 1; i > 0; i--) {
-        const j = Math.floor(Math.random() * (i + 1));
-        [array[i], array[j]] = [array[j], array[i]];
-      }
-      return array;
-    }
-
-    function mostrarErro(mensagem) {
-      erroArquivo.style.display = 'block';
-      erroArquivo.textContent = mensagem;
-    }
-
-    function limparErro() {
-      erroArquivo.style.display = 'none';
-      erroArquivo.textContent = '';
-    }
-  </script></body>
+</body>
 </html>
