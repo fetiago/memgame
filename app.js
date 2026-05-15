@@ -9,12 +9,13 @@ const estado = {
   unidadeAtual: null,
   errosUnidade: 0,
   unidadeConcluida: false,
-  modoRevisaoUnidade: false,
-  forcarPraticaUnidade: false,
-  workout: null,
-  reveladasPorModo: { frases: {}, paragrafos: {} },
   sessaoImportada: null,
   mudouDesdeExportacao: false,
+  workout: {
+    ativo: false,
+    itens: [],
+    index: 0,
+  },
 };
 
 const MAX_PALAVRAS_POR_TRECHO = 12;
@@ -22,42 +23,39 @@ const MIN_PALAVRAS_POR_TRECHO = 5;
 const STATS_KEY = 'memorizadorTextosStatsV3';
 const SESSION_KEY = 'memorizadorTextosSessionV3';
 const PROGRESS_TYPE = 'memorizador_textos_progresso';
-const PROGRESS_VERSION = 5;
-const MAX_GRUPOS_WORKOUT = 8;
+const PROGRESS_VERSION = 3;
 
 const inputJson = document.getElementById('input-json');
 const inputProgresso = document.getElementById('input-progresso');
 const btnBaixarProgresso = document.getElementById('btn-baixar-progresso');
 const selectTexto = document.getElementById('select-texto');
 const selectModo = document.getElementById('select-modo');
+const selectFase = document.getElementById('select-fase');
 const nomeArquivo = document.getElementById('nome-arquivo');
 const erroArquivo = document.getElementById('erro-arquivo');
 
-const telaVazia = document.getElementById('tela-vazia');
-const jogo = document.getElementById('jogo');
 const painelFases = document.getElementById('painel-fases');
 const listaFases = document.getElementById('lista-fases');
 const resumoFase = document.getElementById('resumo-fase');
 const btnRepetirFase = document.getElementById('btn-repetir-fase');
-const btnWorkoutErros = document.getElementById('btn-workout-erros');
-const painelDados = document.getElementById('painel-dados');
-const dadosFaseJson = document.getElementById('dados-fase-json');
+const btnWorkout = document.getElementById('btn-workout');
+const btnSairWorkout = document.getElementById('btn-sair-workout');
+const painelTecnico = document.getElementById('painel-tecnico');
+const dadosTecnicos = document.getElementById('dados-tecnicos');
 
+const telaVazia = document.getElementById('tela-vazia');
+const textoRevelado = document.getElementById('texto-revelado');
 const textoCorrido = document.getElementById('texto-corrido');
-const resumoTextoRevelado = document.getElementById('resumo-texto-revelado');
 const elTitulo = document.getElementById('titulo-texto');
-const elFaseAtual = document.getElementById('fase-atual');
-const elTotalFases = document.getElementById('total-fases');
-const elRotuloUnidade = document.getElementById('rotulo-unidade');
-const elUnidadeAtual = document.getElementById('unidade-atual');
-const elTotalUnidades = document.getElementById('total-unidades');
-const elContadorErros = document.getElementById('contador-erros');
-const barraProgressoTexto = document.getElementById('barra-progresso-texto');
+const elStatusCabecote = document.getElementById('status-cabecote');
+const linhaProgressoFase = document.getElementById('linha-progresso-fase');
+const labelProgressoFase = document.getElementById('label-progresso-fase');
+const labelProgressoUnidade = document.getElementById('label-progresso-unidade');
 const barraProgressoFase = document.getElementById('barra-progresso-fase');
-const barraProgressoFrase = document.getElementById('barra-progresso-frase');
 const areaMontagem = document.getElementById('area-montagem');
 const areaPalavras = document.getElementById('area-palavras');
 const feedback = document.getElementById('feedback');
+const rodapeTreino = document.getElementById('rodape-treino');
 const btnAnterior = document.getElementById('btn-anterior');
 const btnProximo = document.getElementById('btn-proximo');
 const btnReiniciar = document.getElementById('btn-reiniciar');
@@ -67,11 +65,13 @@ inputProgresso.addEventListener('change', importarProgresso);
 btnBaixarProgresso.addEventListener('click', baixarProgresso);
 selectTexto.addEventListener('change', trocarTextoSelecionado);
 selectModo.addEventListener('change', trocarModoTreino);
+selectFase.addEventListener('change', () => irParaFase(Number(selectFase.value)));
 btnRepetirFase.addEventListener('click', repetirFaseAtual);
-btnWorkoutErros.addEventListener('click', iniciarWorkoutErros);
+btnWorkout.addEventListener('click', iniciarWorkoutDosErros);
+btnSairWorkout.addEventListener('click', sairDoWorkout);
 btnAnterior.addEventListener('click', unidadeAnterior);
 btnProximo.addEventListener('click', proximaUnidade);
-btnReiniciar.addEventListener('click', reiniciarTrechoAtual);
+btnReiniciar.addEventListener('click', carregarUnidadeAtual);
 
 window.addEventListener('beforeunload', event => {
   if (!estado.mudouDesdeExportacao) return;
@@ -92,8 +92,7 @@ async function carregarArquivosJson(event) {
     try {
       const conteudo = await arquivo.text();
       const json = JSON.parse(conteudo);
-      const textos = normalizarJson(json, arquivo.name);
-      textosCarregados.push(...textos);
+      textosCarregados.push(...normalizarJson(json, arquivo.name));
       nomes.push(arquivo.name);
     } catch (erro) {
       erros.push(`${arquivo.name}: ${erro.message}`);
@@ -105,17 +104,18 @@ async function carregarArquivosJson(event) {
     estado.textoAtualIndex = 0;
     estado.faseAtualIndex = 0;
     estado.unidadeAtualIndex = 0;
-    estado.reveladasPorModo = { frases: {}, paragrafos: {} };
-    estado.workout = null;
+    desativarWorkout();
     popularSelectTextos();
+    popularSelectFases();
     nomeArquivo.textContent = `Carregado: ${nomes.join(', ')}`;
-    telaVazia.hidden = true;
-    jogo.hidden = false;
     painelFases.hidden = false;
-    painelDados.hidden = false;
+    painelTecnico.hidden = false;
+    telaVazia.hidden = true;
+    textoRevelado.hidden = false;
+    linhaProgressoFase.hidden = false;
 
     const restaurou = tentarRestaurarSessaoImportada() || tentarRestaurarSessaoLocal();
-    if (!restaurou) carregarUnidade();
+    if (!restaurou) carregarUnidadeAtual();
   }
 
   if (erros.length) mostrarErro(erros.join(' | '));
@@ -136,21 +136,23 @@ async function importarProgresso(event) {
       throw new Error('o arquivo não parece ser um JSON de progresso válido.');
     }
 
+    if (estado.textos.length && pacote.current && pacote.current.textKey) {
+      const texto = obterTextoAtual();
+      if (texto && pacote.current.textKey !== chaveTexto(texto)) {
+        throw new Error('este progresso não corresponde ao livro atualmente carregado.');
+      }
+    }
+
     salvarStats({ ...lerStats(), ...statsImportados });
     estado.sessaoImportada = pacote.current || null;
     estado.mudouDesdeExportacao = false;
-
-    if (estado.sessaoImportada && estado.sessaoImportada.reveladasPorModo) {
-      estado.reveladasPorModo = estado.sessaoImportada.reveladasPorModo;
-    }
-
     atualizarFeedback('Progresso importado.', 'ok');
-    renderizarPainelFases();
 
     if (estado.textos.length) {
       const restaurou = tentarRestaurarSessaoImportada();
-      if (!restaurou) carregarUnidade();
+      if (!restaurou) carregarUnidadeAtual();
     }
+    renderizarPainelFases();
   } catch (erro) {
     mostrarErro(`${arquivo.name}: ${erro.message}`);
   } finally {
@@ -197,9 +199,7 @@ function criarPacoteProgresso() {
 
 function criarEstadoAtualParaExportar() {
   const texto = obterTextoAtual();
-  const fase = obterFaseAtual();
-  if (!texto || !fase) return null;
-
+  if (!texto) return null;
   return {
     textKey: chaveTexto(texto),
     titulo: texto.titulo,
@@ -207,9 +207,8 @@ function criarEstadoAtualParaExportar() {
     faseAtualIndex: estado.faseAtualIndex,
     unidadeAtualIndex: estado.unidadeAtualIndex,
     unidadeConcluida: estado.unidadeConcluida,
-    faseTitulo: fase.titulo,
-    reveladasPorModo: estado.reveladasPorModo,
-    workout: estado.workout,
+    workoutAtivo: estado.workout.ativo,
+    workoutIndex: estado.workout.index,
   };
 }
 
@@ -247,18 +246,13 @@ function tentarRestaurarSessaoImportada() {
     selectModo.value = estado.modo;
   }
 
-  if (sessao.reveladasPorModo) estado.reveladasPorModo = sessao.reveladasPorModo;
-
-  const faseIndex = limitarNumero(sessao.faseAtualIndex, 0, textoAtual.fases.length - 1);
-  estado.faseAtualIndex = faseIndex;
+  desativarWorkout();
+  estado.faseAtualIndex = limitarNumero(sessao.faseAtualIndex, 0, textoAtual.fases.length - 1);
+  popularSelectFases();
 
   const unidades = obterUnidadesDaFase();
-  if (!unidades.length) return false;
-
-  estado.unidadeAtualIndex = limitarNumero(sessao.unidadeAtualIndex || 0, 0, unidades.length - 1);
-  estado.unidadeConcluida = Boolean(sessao.unidadeConcluida);
-  estado.workout = sessao.workout || null;
-  carregarUnidade();
+  estado.unidadeAtualIndex = limitarNumero(sessao.unidadeAtualIndex || 0, 0, Math.max(0, unidades.length - 1));
+  carregarUnidadeAtual();
   atualizarFeedback('Sessão restaurada a partir do progresso salvo.', 'ok');
   return true;
 }
@@ -270,96 +264,110 @@ function limitarNumero(valor, minimo, maximo) {
 
 function normalizarJson(json, nomeOrigem) {
   const lista = Array.isArray(json) ? json : [json];
-
-  return lista.map((item, index) => {
-    const titulo = String(item.titulo || item.title || `${nomeOrigem} — texto ${index + 1}`).trim();
-    const blocoParagrafos = item.paragrafos || item.paragraphs || item.textos || item.text || [];
-    const blocoFrasesTopo = item.frases || item.sentences || [];
-    const itensParagrafo = Array.isArray(blocoParagrafos) ? blocoParagrafos : [blocoParagrafos];
-    const fases = [];
-
-    itensParagrafo.forEach((itemParagrafo, indiceParagrafoOriginal) => {
-      const paragraphIndex = indiceParagrafoOriginal;
-      const fase = {
-        paragraphIndex,
-        titulo: `Parágrafo ${paragraphIndex + 1}`,
-        texto: '',
-        unidadesPorTrecho: [],
-        unidadesPorParagrafo: [],
-      };
-
-      if (typeof itemParagrafo === 'string') {
-        const texto = limparTexto(itemParagrafo);
-        if (texto) {
-          fase.texto = texto;
-          adicionarTrechos(texto, paragraphIndex, fase.unidadesPorTrecho, `p${paragraphIndex}:texto`);
-        }
-      } else if (itemParagrafo && typeof itemParagrafo === 'object') {
-        const textoParagrafo = limparTexto(
-          itemParagrafo.texto || itemParagrafo.text || itemParagrafo.conteudo || ''
-        );
-        const frasesDoParagrafo = itemParagrafo.frases || itemParagrafo.sentences || [];
-        const frasesLimpas = [];
-
-        if (Array.isArray(frasesDoParagrafo) && frasesDoParagrafo.length) {
-          frasesDoParagrafo.forEach(itemFrase => {
-            const textoFrase = typeof itemFrase === 'string'
-              ? limparTexto(itemFrase)
-              : limparTexto(itemFrase && (itemFrase.texto || itemFrase.text || itemFrase.conteudo || ''));
-            if (textoFrase) frasesLimpas.push(textoFrase);
-          });
-        }
-
-        fase.texto = textoParagrafo || frasesLimpas.join(' ');
-
-        if (frasesLimpas.length) {
-          frasesLimpas.forEach((frase, fraseIndex) => adicionarTrechos(frase, paragraphIndex, fase.unidadesPorTrecho, `p${paragraphIndex}:s${fraseIndex}`));
-        } else if (fase.texto) {
-          adicionarTrechos(fase.texto, paragraphIndex, fase.unidadesPorTrecho, `p${paragraphIndex}:texto`);
-        }
-      }
-
-      if (fase.texto) fase.unidadesPorParagrafo.push({ texto: fase.texto, paragraphIndex });
-      if (fase.texto || fase.unidadesPorTrecho.length) fases.push(fase);
-    });
-
-    if (!fases.length && Array.isArray(blocoFrasesTopo) && blocoFrasesTopo.length) {
-      const fase = {
-        paragraphIndex: 0,
-        titulo: 'Parágrafo 1',
-        texto: '',
-        unidadesPorTrecho: [],
-        unidadesPorParagrafo: [],
-      };
-
-      blocoFrasesTopo.forEach(itemFrase => {
-        const textoFrase = typeof itemFrase === 'string'
-          ? limparTexto(itemFrase)
-          : limparTexto(itemFrase && (itemFrase.texto || itemFrase.text || itemFrase.conteudo || ''));
-        if (textoFrase) adicionarTrechos(textoFrase, 0, fase.unidadesPorTrecho, `p0:s${fase.unidadesPorTrecho.length}`);
-      });
-
-      fase.texto = fase.unidadesPorTrecho.map(unidade => unidade.texto).join(' ');
-      if (fase.texto) fase.unidadesPorParagrafo.push({ texto: fase.texto, paragraphIndex: 0 });
-      if (fase.texto) fases.push(fase);
-    }
-
-    if (!fases.length) throw new Error('não encontrei textos válidos em paragrafos ou frases.');
-    return { titulo, fases, origem: nomeOrigem };
-  });
+  return lista.map((item, index) => normalizarTexto(item, index, nomeOrigem));
 }
 
-function adicionarTrechos(texto, paragraphIndex, destino, sentenceGroup = `p${paragraphIndex}:g${destino.length}`) {
-  const fraseCompleta = limparTexto(texto);
-  const trechos = quebrarTextoEmTrechos(fraseCompleta, MAX_PALAVRAS_POR_TRECHO);
-  trechos.forEach((trecho, parteIndex) => {
-    destino.push({
-      texto: trecho,
-      paragraphIndex,
-      sentenceGroup,
-      parteIndex,
-      totalPartes: trechos.length,
-      fraseCompleta,
+function normalizarTexto(item, index, nomeOrigem) {
+  const titulo = String(item.titulo || item.title || `${nomeOrigem} — texto ${index + 1}`).trim();
+  const autor = item.autor || item.author || '';
+  const blocoParagrafos = item.paragrafos || item.paragraphs || item.textos || item.text || [];
+  const blocoFrasesTopo = item.frases || item.sentences || [];
+  const itensParagrafo = Array.isArray(blocoParagrafos) ? blocoParagrafos : [blocoParagrafos];
+  const fases = [];
+
+  itensParagrafo.forEach((itemParagrafo, phaseIndex) => {
+    const fase = criarFaseVazia(phaseIndex);
+
+    if (typeof itemParagrafo === 'string') {
+      const texto = limparTexto(itemParagrafo);
+      if (texto) preencherFaseComFrases(fase, [texto]);
+    } else if (itemParagrafo && typeof itemParagrafo === 'object') {
+      const textoParagrafo = limparTexto(itemParagrafo.texto || itemParagrafo.text || itemParagrafo.conteudo || '');
+      const frasesJson = itemParagrafo.frases || itemParagrafo.sentences || [];
+      const frases = extrairFrases(frasesJson);
+
+      fase.texto = textoParagrafo || frases.join(' ');
+      preencherFaseComFrases(fase, frases.length ? frases : [fase.texto]);
+    }
+
+    if (fase.texto || fase.unidadesPorTrecho.length) {
+      if (!fase.texto) fase.texto = fase.unidadesPorTrecho.map(unidade => unidade.texto).join(' ');
+      fase.unidadesPorParagrafo = [{
+        texto: fase.texto,
+        phaseIndex,
+        paragraphIndex: phaseIndex,
+        unitIndex: 0,
+        sentenceId: `${phaseIndex}:p`,
+        sentenceIndex: 0,
+        partIndex: 0,
+        partsInSentence: 1,
+      }];
+      fases.push(fase);
+    }
+  });
+
+  if (!fases.length && Array.isArray(blocoFrasesTopo) && blocoFrasesTopo.length) {
+    const fase = criarFaseVazia(0);
+    preencherFaseComFrases(fase, extrairFrases(blocoFrasesTopo));
+    fase.texto = fase.unidadesPorTrecho.map(unidade => unidade.texto).join(' ');
+    fase.unidadesPorParagrafo = [{
+      texto: fase.texto,
+      phaseIndex: 0,
+      paragraphIndex: 0,
+      unitIndex: 0,
+      sentenceId: '0:p',
+      sentenceIndex: 0,
+      partIndex: 0,
+      partsInSentence: 1,
+    }];
+    if (fase.texto) fases.push(fase);
+  }
+
+  if (!fases.length) throw new Error('não encontrei textos válidos em paragrafos ou frases.');
+  const texto = { titulo, autor, fases, origem: nomeOrigem };
+  texto.key = chaveTexto(texto);
+  return texto;
+}
+
+function criarFaseVazia(phaseIndex) {
+  return {
+    phaseIndex,
+    paragraphIndex: phaseIndex,
+    titulo: `Parágrafo ${phaseIndex + 1}`,
+    texto: '',
+    unidadesPorTrecho: [],
+    unidadesPorParagrafo: [],
+  };
+}
+
+function extrairFrases(frasesJson) {
+  if (!Array.isArray(frasesJson)) return [];
+  return frasesJson.map(itemFrase => {
+    if (typeof itemFrase === 'string') return limparTexto(itemFrase);
+    return limparTexto(itemFrase && (itemFrase.texto || itemFrase.text || itemFrase.conteudo || ''));
+  }).filter(Boolean);
+}
+
+function preencherFaseComFrases(fase, frases) {
+  let unitIndex = fase.unidadesPorTrecho.length;
+  const frasesValidas = frases.map(limparTexto).filter(Boolean);
+  if (!fase.texto) fase.texto = frasesValidas.join(' ');
+
+  frasesValidas.forEach((frase, sentenceIndex) => {
+    const partes = quebrarTextoEmTrechos(frase, MAX_PALAVRAS_POR_TRECHO);
+    const sentenceId = `${fase.phaseIndex}:${sentenceIndex}`;
+    partes.forEach((parte, partIndex) => {
+      fase.unidadesPorTrecho.push({
+        texto: parte,
+        phaseIndex: fase.phaseIndex,
+        paragraphIndex: fase.paragraphIndex,
+        unitIndex,
+        sentenceId,
+        sentenceIndex,
+        partIndex,
+        partsInSentence: partes.length,
+      });
+      unitIndex += 1;
     });
   });
 }
@@ -402,19 +410,15 @@ function quebrarTextoEmTrechos(texto, maxPalavras) {
     if (trecho) trechos.push(trecho);
     inicio = fim;
   });
-
   return trechos;
 }
 
 function escolherMelhorCorte(palavras, corteIdeal, minimo, maximo) {
   const candidatos = [];
   for (let i = minimo; i <= maximo; i++) {
-    const palavraAntesDoCorte = palavras[i - 1] || '';
-    if (terminaComPontuacaoDeCorte(palavraAntesDoCorte)) candidatos.push(i);
+    if (terminaComPontuacaoDeCorte(palavras[i - 1] || '')) candidatos.push(i);
   }
-
   if (!candidatos.length) return Math.max(minimo, Math.min(maximo, corteIdeal));
-
   return candidatos.reduce((melhor, atual) => {
     const distanciaMelhor = Math.abs(melhor - corteIdeal);
     const distanciaAtual = Math.abs(atual - corteIdeal);
@@ -426,8 +430,7 @@ function terminaComPontuacaoDeCorte(palavra) {
   let texto = palavra.trim();
   const envoltorios = ['"', "'", '”', '’', ')', ']', '}'];
   while (texto && envoltorios.includes(texto[texto.length - 1])) texto = texto.slice(0, -1);
-  const ultimo = texto[texto.length - 1];
-  return ['.', ',', ';', ':', '?', '!', '…'].includes(ultimo);
+  return ['.', ',', ';', ':', '?', '!', '…'].includes(texto[texto.length - 1]);
 }
 
 function obterTextoAtual() {
@@ -439,39 +442,24 @@ function obterFaseAtual() {
   return texto ? texto.fases[estado.faseAtualIndex] : null;
 }
 
-function obterUnidadesDaFase(fase = obterFaseAtual()) {
+function obterUnidadesDaFase() {
+  const fase = obterFaseAtual();
   if (!fase) return [];
   return estado.modo === 'paragrafos' ? fase.unidadesPorParagrafo : fase.unidadesPorTrecho;
 }
 
+function obterUnidadeAtual() {
+  if (estado.workout.ativo) return estado.workout.itens[estado.workout.index] || null;
+  return obterUnidadesDaFase()[estado.unidadeAtualIndex] || null;
+}
+
 function rotuloModo() {
+  if (estado.workout.ativo) return 'Workout';
   return estado.modo === 'paragrafos' ? 'Parágrafo' : 'Trecho';
-}
-
-function obterMapaReveladas(modo = estado.modo) {
-  if (!estado.reveladasPorModo[modo]) estado.reveladasPorModo[modo] = {};
-  return estado.reveladasPorModo[modo];
-}
-
-function obterSetReveladasDaFase(faseIndex = estado.faseAtualIndex, modo = estado.modo) {
-  const mapa = obterMapaReveladas(modo);
-  if (!Array.isArray(mapa[String(faseIndex)])) mapa[String(faseIndex)] = [];
-  return new Set(mapa[String(faseIndex)]);
-}
-
-function marcarUnidadeRevelada(faseIndex, unidadeIndex) {
-  const mapa = obterMapaReveladas();
-  const chaveFase = String(faseIndex);
-  if (!Array.isArray(mapa[chaveFase])) mapa[chaveFase] = [];
-  if (!mapa[chaveFase].includes(unidadeIndex)) {
-    mapa[chaveFase].push(unidadeIndex);
-    mapa[chaveFase].sort((a, b) => a - b);
-  }
 }
 
 function popularSelectTextos() {
   selectTexto.innerHTML = '';
-
   estado.textos.forEach((texto, index) => {
     const totalTrechos = texto.fases.reduce((soma, fase) => soma + fase.unidadesPorTrecho.length, 0);
     const option = document.createElement('option');
@@ -479,26 +467,41 @@ function popularSelectTextos() {
     option.textContent = `${texto.titulo} (${texto.fases.length} fases / ${totalTrechos} trechos)`;
     selectTexto.appendChild(option);
   });
-
   selectTexto.disabled = estado.textos.length <= 1;
   selectModo.disabled = false;
   selectModo.value = estado.modo;
   selectTexto.value = String(estado.textoAtualIndex);
 }
 
+function popularSelectFases() {
+  const texto = obterTextoAtual();
+  if (!texto) return;
+  selectFase.innerHTML = '';
+  texto.fases.forEach((fase, index) => {
+    const option = document.createElement('option');
+    option.value = String(index);
+    option.textContent = `${index + 1}. ${fase.titulo}`;
+    selectFase.appendChild(option);
+  });
+  selectFase.disabled = texto.fases.length <= 1;
+  selectFase.value = String(estado.faseAtualIndex);
+  renderizarPainelFases();
+}
+
 function trocarTextoSelecionado() {
   estado.textoAtualIndex = Number(selectTexto.value);
   estado.faseAtualIndex = 0;
-  estado.workout = null;
-  reiniciarFluxoDaFase(false);
-  carregarUnidade();
+  estado.unidadeAtualIndex = 0;
+  desativarWorkout();
+  popularSelectFases();
+  carregarUnidadeAtual();
 }
 
 function trocarModoTreino() {
   estado.modo = selectModo.value;
-  estado.workout = null;
-  reiniciarFluxoDaFase(false);
-  carregarUnidade();
+  estado.unidadeAtualIndex = 0;
+  desativarWorkout();
+  carregarUnidadeAtual();
   renderizarPainelFases();
 }
 
@@ -506,145 +509,142 @@ function irParaFase(index) {
   const texto = obterTextoAtual();
   if (!texto || index < 0 || index >= texto.fases.length) return;
   estado.faseAtualIndex = index;
-  estado.workout = null;
-  reiniciarFluxoDaFase(false);
-  carregarUnidade();
+  estado.unidadeAtualIndex = 0;
+  desativarWorkout();
+  selectFase.value = String(index);
+  carregarUnidadeAtual();
 }
 
 function repetirFaseAtual() {
-  estado.workout = null;
-  reiniciarFluxoDaFase(false);
-  carregarUnidade();
+  desativarWorkout();
+  estado.unidadeAtualIndex = 0;
+  carregarUnidadeAtual();
 }
 
-function reiniciarFluxoDaFase(limparRevelacaoDaFase = false) {
-  if (limparRevelacaoDaFase) {
-    const mapa = obterMapaReveladas();
-    delete mapa[String(estado.faseAtualIndex)];
-  }
-  estado.unidadeAtualIndex = primeiroIndiceNaoReveladoDaFase(estado.faseAtualIndex);
-  estado.unidadeAtual = null;
-  estado.errosUnidade = 0;
-  estado.unidadeConcluida = false;
-  estado.modoRevisaoUnidade = false;
-  estado.forcarPraticaUnidade = false;
-  renderizarTextoRevelado();
-}
-
-function primeiroIndiceNaoReveladoDaFase(faseIndex) {
+function carregarUnidadeAtual() {
   const texto = obterTextoAtual();
-  if (!texto) return 0;
-  const fase = texto.fases[faseIndex];
-  const unidades = obterUnidadesDaFase(fase);
-  const reveladas = obterSetReveladasDaFase(faseIndex);
-  for (let i = 0; i < unidades.length; i++) {
-    if (!reveladas.has(i)) return i;
+  const unidade = obterUnidadeAtual();
+  if (!texto || !unidade) return;
+
+  if (!estado.workout.ativo) {
+    estado.faseAtualIndex = unidade.phaseIndex;
+    selectFase.value = String(estado.faseAtualIndex);
   }
-  return 0;
-}
 
-function carregarUnidade() {
-  const texto = obterTextoAtual();
-  const fase = obterFaseAtual();
-  const unidades = obterUnidadesDaFase();
-  if (!texto || !fase || !unidades.length) return;
-
-  if (estado.unidadeAtualIndex >= unidades.length) estado.unidadeAtualIndex = 0;
-  if (estado.unidadeAtualIndex < 0) estado.unidadeAtualIndex = 0;
-
-  const unidadeAtual = unidades[estado.unidadeAtualIndex];
-  const unidadeJaRevelada = obterSetReveladasDaFase(estado.faseAtualIndex).has(estado.unidadeAtualIndex);
-  const mostrarComoRevisao = unidadeJaRevelada && !estado.forcarPraticaUnidade;
-
-  estado.unidadeAtual = unidadeAtual;
-  estado.palavrasOriginais = separarPalavras(unidadeAtual.texto);
+  estado.unidadeAtual = unidade;
+  estado.palavrasOriginais = separarPalavras(unidade.texto);
   estado.palavrasSelecionadas = [];
   estado.errosUnidade = 0;
-  estado.unidadeConcluida = unidadeJaRevelada;
-  estado.modoRevisaoUnidade = mostrarComoRevisao;
-  estado.forcarPraticaUnidade = false;
+  estado.unidadeConcluida = false;
 
-  const workoutAtivo = Boolean(estado.workout && estado.workout.ativo);
-  const prefixoWorkout = workoutAtivo ? `Workout ${estado.workout.pos + 1}/${estado.workout.fila.length} — ` : '';
-
-  elTitulo.textContent = `${prefixoWorkout}${texto.titulo} — ${fase.titulo}`;
-  elFaseAtual.textContent = estado.faseAtualIndex + 1;
-  elTotalFases.textContent = texto.fases.length;
-  elRotuloUnidade.textContent = rotuloModo();
-  elUnidadeAtual.textContent = estado.unidadeAtualIndex + 1;
-  elTotalUnidades.textContent = unidades.length;
-  elContadorErros.textContent = estado.errosUnidade;
-  btnProximo.textContent = textoBotaoProximo();
   feedback.textContent = '';
   feedback.className = 'feedback';
-
   telaVazia.hidden = true;
-  jogo.hidden = false;
-  painelFases.hidden = false;
-  painelDados.hidden = false;
-  btnAnterior.hidden = !podeVoltar();
+  textoRevelado.hidden = false;
+  linhaProgressoFase.hidden = false;
+  areaMontagem.hidden = false;
+  areaPalavras.hidden = false;
+  rodapeTreino.hidden = false;
+
+  btnAnterior.disabled = estado.workout.ativo ? estado.workout.index === 0 : false;
+  btnProximo.disabled = false;
   btnReiniciar.hidden = false;
 
-  if (mostrarComoRevisao) {
-    areaMontagem.hidden = true;
-    areaPalavras.hidden = true;
-    btnProximo.style.display = podeAvancar() ? 'inline-block' : 'none';
-    atualizarFeedback('Trecho já revelado. Avance para voltar ao ponto atual ou reinicie para praticar de novo.', 'ok');
-  } else {
-    areaMontagem.hidden = false;
-    areaPalavras.hidden = false;
-    btnProximo.style.display = 'none';
-    renderizarMontagem();
-    renderizarBancoDePalavras();
-  }
-
+  renderizarCabecote();
   renderizarTextoRevelado();
+  renderizarMontagem();
+  renderizarBancoDePalavras();
   renderizarPainelFases();
-  atualizarTodosProgressos();
-  renderizarDadosFase();
+  renderizarDadosTecnicos();
   salvarSessaoLocal();
-}
-
-
-function podeVoltar() {
-  if (estado.workout && estado.workout.ativo) return estado.workout.pos > 0;
-  return estado.unidadeAtualIndex > 0;
-}
-
-function podeAvancar() {
-  if (estado.workout && estado.workout.ativo) return true;
-  const unidades = obterUnidadesDaFase();
-  if (estado.unidadeAtualIndex >= unidades.length - 1) {
-    const texto = obterTextoAtual();
-    return Boolean(texto && estado.faseAtualIndex < texto.fases.length - 1) || estado.unidadeConcluida;
-  }
-  return estado.unidadeConcluida || obterSetReveladasDaFase(estado.faseAtualIndex).has(estado.unidadeAtualIndex);
-}
-
-function textoBotaoProximo() {
-  if (estado.workout && estado.workout.ativo) {
-    return estado.workout.pos >= estado.workout.fila.length - 1 ? 'Concluir workout' : 'Próximo do workout';
-  }
-
-  const unidades = obterUnidadesDaFase();
-  const ultimaUnidadeDaFase = estado.unidadeAtualIndex >= unidades.length - 1;
-  if (ultimaUnidadeDaFase) {
-    const texto = obterTextoAtual();
-    const existeProximaFase = texto && estado.faseAtualIndex < texto.fases.length - 1;
-    return existeProximaFase ? 'Próxima fase' : 'Concluir treino';
-  }
-
-  return estado.modo === 'paragrafos' ? 'Próximo parágrafo' : 'Próximo trecho';
-}
-
-function reiniciarTrechoAtual() {
-  estado.forcarPraticaUnidade = true;
-  estado.modoRevisaoUnidade = false;
-  carregarUnidade();
 }
 
 function separarPalavras(texto) {
   return limparTexto(texto).split(' ').map(palavra => palavra.trim()).filter(Boolean);
+}
+
+function renderizarCabecote() {
+  const texto = obterTextoAtual();
+  const fase = obterFaseAtual();
+  if (!texto) return;
+
+  if (estado.workout.ativo) {
+    const item = estado.workout.itens[estado.workout.index];
+    elTitulo.textContent = `${texto.titulo} — Workout dos erros`;
+    elStatusCabecote.textContent = `Item ${estado.workout.index + 1}/${estado.workout.itens.length} · origem: fase ${item.phaseIndex + 1}`;
+    labelProgressoFase.textContent = 'Workout';
+    labelProgressoUnidade.textContent = `${estado.workout.index + 1}/${estado.workout.itens.length}`;
+    barraProgressoFase.style.width = `${((estado.workout.index) / Math.max(1, estado.workout.itens.length)) * 100}%`;
+    btnProximo.textContent = estado.workout.index >= estado.workout.itens.length - 1 ? 'Concluir workout' : 'Próximo item';
+    return;
+  }
+
+  const unidades = obterUnidadesDaFase();
+  elTitulo.textContent = `${texto.titulo} — ${fase.titulo}`;
+  elStatusCabecote.textContent = `Cabeçote na fase ${estado.faseAtualIndex + 1}, ${rotuloModo().toLowerCase()} ${estado.unidadeAtualIndex + 1}`;
+  labelProgressoFase.textContent = `Fase ${estado.faseAtualIndex + 1}/${texto.fases.length}`;
+  labelProgressoUnidade.textContent = `${rotuloModo()} ${estado.unidadeAtualIndex + 1}/${unidades.length}`;
+  atualizarProgressoFase(false);
+  btnProximo.textContent = estado.unidadeAtualIndex >= unidades.length - 1
+    ? (estado.faseAtualIndex >= texto.fases.length - 1 ? 'Concluir treino' : 'Próxima fase')
+    : 'Próximo trecho';
+}
+
+function renderizarTextoRevelado() {
+  const texto = obterTextoAtual();
+  textoCorrido.innerHTML = '';
+  if (!texto) {
+    textoCorrido.classList.add('vazio');
+    textoCorrido.textContent = 'Carregue um livro JSON para começar.';
+    return;
+  }
+
+  const limite = obterLimiteRevelacao();
+  if (limite.phaseIndex === 0 && limite.unitIndex === 0 && !estado.unidadeConcluida) {
+    textoCorrido.classList.add('vazio');
+    textoCorrido.textContent = 'Complete ou avance o primeiro trecho para revelar o texto.';
+    return;
+  }
+
+  textoCorrido.classList.remove('vazio');
+  const fragmento = document.createDocumentFragment();
+
+  for (let phaseIndex = 0; phaseIndex < texto.fases.length; phaseIndex++) {
+    if (phaseIndex > limite.phaseIndex) break;
+
+    const fase = texto.fases[phaseIndex];
+    const p = document.createElement('p');
+    p.className = 'paragrafo-revelado';
+
+    if (phaseIndex < limite.phaseIndex) {
+      p.textContent = fase.texto;
+    } else {
+      const unidades = estado.modo === 'paragrafos' ? fase.unidadesPorParagrafo : fase.unidadesPorTrecho;
+      const fim = Math.min(limite.unitIndex, unidades.length);
+      p.textContent = unidades.slice(0, fim).map(unidade => unidade.texto).join(' ');
+    }
+
+    if (p.textContent.trim()) fragmento.appendChild(p);
+  }
+
+  if (!fragmento.childNodes.length) {
+    textoCorrido.classList.add('vazio');
+    textoCorrido.textContent = 'Complete ou avance este trecho para revelar o texto.';
+  } else {
+    textoCorrido.appendChild(fragmento);
+    textoCorrido.scrollTop = textoCorrido.scrollHeight;
+  }
+}
+
+function obterLimiteRevelacao() {
+  if (estado.workout.ativo) {
+    const item = estado.workout.itens[estado.workout.index] || { phaseIndex: 0, unitIndex: 0 };
+    return { phaseIndex: item.phaseIndex, unitIndex: item.unitIndex };
+  }
+  return {
+    phaseIndex: estado.faseAtualIndex,
+    unitIndex: estado.unidadeAtualIndex + (estado.unidadeConcluida ? 1 : 0),
+  };
 }
 
 function renderizarBancoDePalavras() {
@@ -672,75 +672,14 @@ function renderizarMontagem() {
     btn.type = 'button';
     btn.className = 'chip selecionada';
     btn.textContent = item.palavra;
-    btn.title = posicao === estado.palavrasSelecionadas.length - 1
-      ? 'Clique para desfazer esta palavra'
-      : 'Só a última palavra pode ser desfeita';
-
-    if (posicao === estado.palavrasSelecionadas.length - 1) {
-      btn.addEventListener('click', desfazerUltimaPalavra);
-    }
-
+    btn.title = posicao === estado.palavrasSelecionadas.length - 1 ? 'Clique para desfazer esta palavra' : 'Só a última palavra pode ser desfeita';
+    if (posicao === estado.palavrasSelecionadas.length - 1) btn.addEventListener('click', desfazerUltimaPalavra);
     areaMontagem.appendChild(btn);
   });
 }
 
-function renderizarTextoRevelado() {
-  const texto = obterTextoAtual();
-  textoCorrido.innerHTML = '';
-
-  if (!texto) {
-    textoCorrido.classList.add('vazio');
-    textoCorrido.textContent = 'Carregue um livro JSON para começar.';
-    resumoTextoRevelado.textContent = '0% revelado';
-    return;
-  }
-
-  const total = contarUnidadesTexto();
-  const reveladasTotal = contarUnidadesReveladasTexto();
-  const percentual = total ? Math.round((reveladasTotal / total) * 100) : 0;
-  resumoTextoRevelado.textContent = `${percentual}% revelado`;
-
-  if (reveladasTotal === 0) {
-    textoCorrido.classList.add('vazio');
-    textoCorrido.textContent = 'Complete o primeiro trecho para começar a revelar o texto.';
-    return;
-  }
-
-  textoCorrido.classList.remove('vazio');
-
-  texto.fases.forEach((fase, faseIndex) => {
-    const unidades = obterUnidadesDaFase(fase);
-    const reveladas = obterSetReveladasDaFase(faseIndex);
-    const p = document.createElement('p');
-    p.className = 'paragrafo-revelado';
-
-    if (reveladas.size === 0) {
-      p.classList.add('paragrafo-oculto');
-      p.textContent = `Fase ${faseIndex + 1} ainda oculta.`;
-      textoCorrido.appendChild(p);
-      return;
-    }
-
-    unidades.forEach((unidade, unidadeIndex) => {
-      if (reveladas.has(unidadeIndex)) {
-        const span = document.createElement('span');
-        span.className = 'trecho-revelado';
-        span.textContent = unidade.texto;
-        p.appendChild(span);
-      } else if (unidadeIndex > Math.max(...Array.from(reveladas))) {
-        const lacuna = document.createElement('span');
-        lacuna.className = 'lacuna';
-        lacuna.textContent = 'oculto';
-        p.appendChild(lacuna);
-      }
-    });
-
-    textoCorrido.appendChild(p);
-  });
-}
-
 function verificarPalavra(btn, indexOriginal) {
-  if (btn.classList.contains('erro')) return;
+  if (estado.unidadeConcluida || btn.classList.contains('erro')) return;
 
   const indiceEsperado = estado.palavrasSelecionadas.length;
   const palavraEsperada = estado.palavrasOriginais[indiceEsperado];
@@ -751,7 +690,6 @@ function verificarPalavra(btn, indexOriginal) {
     estado.palavrasSelecionadas.push({ palavra: palavraEsperada, indexOriginal });
     btn.classList.add('oculta');
     renderizarMontagem();
-    atualizarTodosProgressos();
     atualizarFeedback('Boa.', 'ok');
 
     if (estado.palavrasSelecionadas.length === estado.palavrasOriginais.length) concluirUnidade();
@@ -761,7 +699,7 @@ function verificarPalavra(btn, indexOriginal) {
   btn.classList.add('erro');
   estado.errosUnidade++;
   estado.mudouDesdeExportacao = true;
-  elContadorErros.textContent = estado.errosUnidade;
+  registrarErroUnidade();
   atualizarFeedback('Marcado em vermelho. Agora encontre a palavra certa.', 'erro');
 }
 
@@ -770,287 +708,294 @@ function limparErrosVisuaisDoBanco() {
 }
 
 function desfazerUltimaPalavra() {
+  if (estado.unidadeConcluida) return;
   const removida = estado.palavrasSelecionadas.pop();
   if (!removida) return;
-
   const botaoOriginal = areaPalavras.querySelector(`[data-index-original="${removida.indexOriginal}"]`);
   if (botaoOriginal) botaoOriginal.classList.remove('oculta');
-  btnProximo.style.display = 'none';
   atualizarFeedback('Última palavra removida.', '');
   renderizarMontagem();
-  atualizarTodosProgressos();
 }
 
 function concluirUnidade() {
   estado.unidadeConcluida = true;
-  estado.modoRevisaoUnidade = true;
   estado.mudouDesdeExportacao = true;
-  marcarUnidadeRevelada(estado.faseAtualIndex, estado.unidadeAtualIndex);
-  registrarConclusaoDaUnidade();
-  renderizarTextoRevelado();
-  renderizarPainelFases();
-  renderizarDadosFase();
-  atualizarTodosProgressos();
-  atualizarFeedback(`${rotuloModo()} completo.`, 'ok');
+  registrarAcertoUnidade();
 
-  areaMontagem.hidden = true;
-  areaPalavras.hidden = true;
-  btnReiniciar.hidden = false;
-  btnAnterior.hidden = !podeVoltar();
-  btnProximo.textContent = textoBotaoProximo();
-  btnProximo.style.display = 'inline-block';
+  if (estado.workout.ativo) reduzirErroPorWorkoutAcertado();
+
+  renderizarTextoRevelado();
+  renderizarCabecote();
+  renderizarPainelFases();
+  renderizarDadosTecnicos();
+  atualizarFeedback(`${rotuloModo()} completo.`, 'ok');
   salvarSessaoLocal();
 }
 
 function unidadeAnterior() {
-  if (estado.workout && estado.workout.ativo) {
-    if (estado.workout.pos <= 0) return;
-    estado.workout.pos--;
-    aplicarItemWorkoutAtual();
-    carregarUnidade();
+  if (estado.workout.ativo) {
+    if (estado.workout.index <= 0) return;
+    estado.workout.index--;
+    const item = estado.workout.itens[estado.workout.index];
+    estado.faseAtualIndex = item.phaseIndex;
+    estado.unidadeAtualIndex = item.unitIndex;
+    carregarUnidadeAtual();
     return;
   }
 
-  if (estado.unidadeAtualIndex <= 0) return;
-  estado.unidadeAtualIndex--;
-  carregarUnidade();
+  if (estado.unidadeAtualIndex > 0) {
+    estado.unidadeAtualIndex--;
+  } else if (estado.faseAtualIndex > 0) {
+    estado.faseAtualIndex--;
+    const unidades = obterUnidadesDaFase();
+    estado.unidadeAtualIndex = Math.max(0, unidades.length - 1);
+  } else {
+    return;
+  }
+  carregarUnidadeAtual();
 }
 
 function proximaUnidade() {
-  if (estado.workout && estado.workout.ativo) {
-    estado.workout.pos++;
-    if (estado.workout.pos >= estado.workout.fila.length) {
+  if (estado.workout.ativo) {
+    if (estado.workout.index >= estado.workout.itens.length - 1) {
       finalizarWorkout();
       return;
     }
-    aplicarItemWorkoutAtual();
-    carregarUnidade();
+    estado.workout.index++;
+    const item = estado.workout.itens[estado.workout.index];
+    estado.faseAtualIndex = item.phaseIndex;
+    estado.unidadeAtualIndex = item.unitIndex;
+    carregarUnidadeAtual();
     return;
   }
 
+  const texto = obterTextoAtual();
   const unidades = obterUnidadesDaFase();
-  estado.unidadeAtualIndex++;
+  if (!texto || !unidades.length) return;
 
-  if (estado.unidadeAtualIndex >= unidades.length) {
-    const texto = obterTextoAtual();
-    const proximaFaseExiste = texto && estado.faseAtualIndex + 1 < texto.fases.length;
-    if (proximaFaseExiste) {
-      estado.faseAtualIndex++;
-      estado.unidadeAtualIndex = primeiroIndiceNaoReveladoDaFase(estado.faseAtualIndex);
-      carregarUnidade();
-      return;
-    }
+  if (estado.unidadeAtualIndex < unidades.length - 1) {
+    estado.unidadeAtualIndex++;
+  } else if (estado.faseAtualIndex < texto.fases.length - 1) {
+    estado.faseAtualIndex++;
+    estado.unidadeAtualIndex = 0;
+  } else {
     finalizarTreino();
     return;
   }
 
-  estado.unidadeConcluida = obterSetReveladasDaFase(estado.faseAtualIndex).has(estado.unidadeAtualIndex);
-  carregarUnidade();
+  carregarUnidadeAtual();
 }
 
+function finalizarTreino() {
+  atualizarFeedback('Treino concluído. Use o workout para atacar os erros acumulados.', 'ok');
+  salvarSessaoLocal();
+}
 
-function iniciarWorkoutErros() {
+function atualizarProgressoFase(contarAtualComoConcluido) {
+  const total = obterUnidadesDaFase().length;
+  const concluidas = estado.unidadeAtualIndex + (contarAtualComoConcluido ? 1 : 0);
+  const progresso = total <= 0 ? 0 : (concluidas / total) * 100;
+  barraProgressoFase.style.width = `${Math.max(0, Math.min(100, progresso))}%`;
+}
+
+function registrarErroUnidade() {
   const texto = obterTextoAtual();
-  if (!texto) {
-    atualizarFeedback('Carregue um livro antes de iniciar o workout.', 'erro');
-    return;
-  }
+  const unidade = estado.unidadeAtual;
+  if (!texto || !unidade) return;
 
-  if (estado.modo !== 'frases') {
-    estado.modo = 'frases';
-    selectModo.value = 'frases';
-  }
-
-  const fila = criarFilaWorkoutErros();
-  if (!fila.length) {
-    atualizarFeedback('Ainda não há erros registrados para montar um workout.', 'erro');
-    return;
-  }
-
-  estado.workout = {
-    ativo: true,
-    tipo: 'maiores-erros',
-    criadoEm: new Date().toISOString(),
-    pos: 0,
-    fila,
-  };
-
-  aplicarItemWorkoutAtual();
-  carregarUnidade();
-  atualizarFeedback(`Workout iniciado com ${fila.length} trecho(s), agrupados pelas frases mais difíceis.`, 'ok');
+  const stats = garantirRegistroUnidade(texto, unidade);
+  stats.faseStats.erros += 1;
+  stats.unidadeStats.erros += 1;
+  stats.faseStats.ultimaPratica = new Date().toISOString();
+  stats.unidadeStats.ultimaPratica = stats.faseStats.ultimaPratica;
+  salvarStats(stats.todosStats);
+  renderizarPainelFases();
+  renderizarDadosTecnicos();
 }
 
-function criarFilaWorkoutErros() {
+function registrarAcertoUnidade() {
+  const texto = obterTextoAtual();
+  const unidade = estado.unidadeAtual;
+  if (!texto || !unidade) return;
+
+  const stats = garantirRegistroUnidade(texto, unidade);
+  stats.faseStats.tentativas += 1;
+  stats.faseStats.acertos += 1;
+  stats.unidadeStats.tentativas += 1;
+  stats.unidadeStats.acertos += 1;
+  stats.faseStats.ultimaPratica = new Date().toISOString();
+  stats.unidadeStats.ultimaPratica = stats.faseStats.ultimaPratica;
+  salvarStats(stats.todosStats);
+}
+
+function reduzirErroPorWorkoutAcertado() {
+  const texto = obterTextoAtual();
+  const unidade = estado.unidadeAtual;
+  if (!texto || !unidade) return;
+
+  const stats = garantirRegistroUnidade(texto, unidade);
+  if (stats.unidadeStats.erros > 0) {
+    stats.unidadeStats.erros -= 1;
+    stats.faseStats.erros = Math.max(0, stats.faseStats.erros - 1);
+    salvarStats(stats.todosStats);
+  }
+}
+
+function garantirRegistroUnidade(texto, unidade) {
+  const todosStats = lerStats();
+  const chave = chaveTexto(texto);
+  if (!todosStats[chave]) todosStats[chave] = { titulo: texto.titulo, fases: {} };
+
+  const faseId = String(unidade.phaseIndex);
+  if (!todosStats[chave].fases[faseId]) {
+    todosStats[chave].fases[faseId] = { erros: 0, tentativas: 0, acertos: 0, unidades: {} };
+  }
+
+  const faseStats = todosStats[chave].fases[faseId];
+  const unidadeId = String(unidade.unitIndex);
+  if (!faseStats.unidades[unidadeId]) {
+    faseStats.unidades[unidadeId] = {
+      erros: 0,
+      tentativas: 0,
+      acertos: 0,
+      sentenceId: unidade.sentenceId,
+      partIndex: unidade.partIndex,
+      texto: unidade.texto,
+    };
+  }
+
+  return { todosStats, faseStats, unidadeStats: faseStats.unidades[unidadeId] };
+}
+
+function iniciarWorkoutDosErros() {
+  const itens = montarItensWorkout();
+  if (!itens.length) {
+    atualizarFeedback('Ainda não há erros registrados para montar um workout.', 'ok');
+    return;
+  }
+
+  estado.workout.ativo = true;
+  estado.workout.itens = itens;
+  estado.workout.index = 0;
+  const primeiro = itens[0];
+  estado.faseAtualIndex = primeiro.phaseIndex;
+  estado.unidadeAtualIndex = primeiro.unitIndex;
+  btnSairWorkout.hidden = false;
+  btnWorkout.hidden = true;
+  carregarUnidadeAtual();
+  atualizarFeedback(`Workout iniciado com ${itens.length} trecho(s).`, 'ok');
+}
+
+function montarItensWorkout() {
   const texto = obterTextoAtual();
   if (!texto) return [];
-
   const statsTexto = lerStats()[chaveTexto(texto)];
   if (!statsTexto || !statsTexto.fases) return [];
 
   const grupos = new Map();
 
-  texto.fases.forEach((fase, faseIndex) => {
-    const faseStats = statsTexto.fases[String(faseIndex)];
+  texto.fases.forEach((fase, phaseIndex) => {
+    const faseStats = statsTexto.fases[String(phaseIndex)];
     if (!faseStats || !faseStats.unidades) return;
 
-    fase.unidadesPorTrecho.forEach((unidade, unidadeIndex) => {
-      const unidadeStats = faseStats.unidades[String(unidadeIndex)];
-      if (!unidadeStats || !unidadeStats.erros) return;
+    fase.unidadesPorTrecho.forEach(unidade => {
+      const unidadeStats = faseStats.unidades[String(unidade.unitIndex)];
+      if (!unidadeStats || unidadeStats.erros <= 0) return;
 
-      const groupKey = `${faseIndex}::${unidade.sentenceGroup || unidadeIndex}`;
-      if (!grupos.has(groupKey)) {
-        const indicesDoGrupo = fase.unidadesPorTrecho
-          .map((u, i) => ({ unidade: u, index: i }))
-          .filter(item => (item.unidade.sentenceGroup || item.index) === (unidade.sentenceGroup || unidadeIndex))
-          .map(item => item.index);
-
-        grupos.set(groupKey, {
-          groupKey,
-          faseIndex,
-          indices: indicesDoGrupo,
-          erros: 0,
-          tentativas: 0,
-          fraseCompleta: unidade.fraseCompleta || unidade.texto,
-        });
+      const chaveGrupo = `${phaseIndex}:${unidade.sentenceId}`;
+      if (!grupos.has(chaveGrupo)) {
+        const partes = fase.unidadesPorTrecho.filter(u => u.sentenceId === unidade.sentenceId);
+        grupos.set(chaveGrupo, { erros: 0, phaseIndex, sentenceId: unidade.sentenceId, partes });
       }
-
-      const grupo = grupos.get(groupKey);
-      grupo.erros += unidadeStats.erros || 0;
-      grupo.tentativas += unidadeStats.tentativas || 0;
+      grupos.get(chaveGrupo).erros += unidadeStats.erros;
     });
   });
 
-  const gruposOrdenados = Array.from(grupos.values())
-    .filter(grupo => grupo.erros > 0)
-    .sort((a, b) => b.erros - a.erros || a.faseIndex - b.faseIndex || a.indices[0] - b.indices[0])
-    .slice(0, MAX_GRUPOS_WORKOUT);
-
-  const fila = [];
-  gruposOrdenados.forEach(grupo => {
-    grupo.indices.forEach(unidadeIndex => {
-      fila.push({
-        faseIndex: grupo.faseIndex,
-        unidadeIndex,
-        groupKey: grupo.groupKey,
-        errosGrupo: grupo.erros,
-        fraseCompleta: grupo.fraseCompleta,
-      });
-    });
-  });
-
-  return fila;
+  return Array.from(grupos.values())
+    .sort((a, b) => b.erros - a.erros || a.phaseIndex - b.phaseIndex)
+    .flatMap(grupo => grupo.partes.map(unidade => ({ ...unidade, workoutGroupErrors: grupo.erros })));
 }
 
-function aplicarItemWorkoutAtual() {
-  if (!estado.workout || !estado.workout.ativo) return;
-  const item = estado.workout.fila[estado.workout.pos];
-  if (!item) return;
-  estado.faseAtualIndex = item.faseIndex;
-  estado.unidadeAtualIndex = item.unidadeIndex;
-  estado.forcarPraticaUnidade = true;
-  estado.modoRevisaoUnidade = false;
+function sairDoWorkout() {
+  desativarWorkout();
+  carregarUnidadeAtual();
+  atualizarFeedback('Workout encerrado.', 'ok');
 }
 
 function finalizarWorkout() {
-  estado.workout = null;
-  estado.forcarPraticaUnidade = false;
-  estado.modoRevisaoUnidade = false;
+  desativarWorkout();
   renderizarPainelFases();
-  carregarUnidade();
-  atualizarFeedback('Workout concluído. Agora escolha uma fase ou baixe o progresso.', 'ok');
+  renderizarDadosTecnicos();
+  atualizarFeedback('Workout concluído. Um acerto reduz um erro; erros feitos no workout também ficam registrados.', 'ok');
+  carregarUnidadeAtual();
 }
 
-function finalizarTreino() {
-  areaMontagem.hidden = true;
-  areaPalavras.hidden = true;
-  btnReiniciar.hidden = true;
-  btnAnterior.hidden = false;
-  btnProximo.style.display = 'none';
-  feedback.className = 'feedback ok';
-  feedback.textContent = 'Treino concluído. Use as fases com mais erros para reforço e baixe o progresso antes de fechar.';
-  salvarSessaoLocal();
+function desativarWorkout() {
+  estado.workout.ativo = false;
+  estado.workout.itens = [];
+  estado.workout.index = 0;
+  if (btnSairWorkout) btnSairWorkout.hidden = true;
+  if (btnWorkout) btnWorkout.hidden = false;
 }
 
-function atualizarTodosProgressos() {
+function obterStatsDaFase(texto, faseIndex) {
+  const stats = lerStats();
+  const registroTexto = stats[chaveTexto(texto)];
+  if (!registroTexto || !registroTexto.fases) return { erros: 0, tentativas: 0, acertos: 0, unidades: {} };
+  return registroTexto.fases[String(faseIndex)] || { erros: 0, tentativas: 0, acertos: 0, unidades: {} };
+}
+
+function renderizarPainelFases() {
+  const texto = obterTextoAtual();
+  if (!texto || painelFases.hidden) return;
+
+  listaFases.innerHTML = '';
+  texto.fases.forEach((fase, index) => {
+    const stats = obterStatsDaFase(texto, index);
+    const media = stats.tentativas ? (stats.erros / stats.tentativas) : stats.erros;
+    const botao = document.createElement('button');
+    botao.type = 'button';
+    botao.className = 'fase-btn';
+    botao.textContent = String(index + 1);
+    botao.title = `Fase ${index + 1} · erros: ${stats.erros || 0} · média: ${Number(media || 0).toFixed(2)}`;
+
+    if (index === estado.faseAtualIndex && !estado.workout.ativo) botao.classList.add('ativa');
+    if ((stats.acertos || 0) > 0) botao.classList.add('concluida');
+    if (media > 0 && media < 1) botao.classList.add('amarela');
+    if (media >= 1) botao.classList.add('vermelha');
+
+    botao.addEventListener('click', () => irParaFase(index));
+    listaFases.appendChild(botao);
+  });
+
+  const faseStats = obterStatsDaFase(texto, estado.faseAtualIndex);
+  const mediaAtual = faseStats.tentativas ? (faseStats.erros / faseStats.tentativas) : faseStats.erros || 0;
+  resumoFase.textContent = `Fase atual: ${estado.faseAtualIndex + 1}. Erros: ${faseStats.erros || 0}. Média: ${Number(mediaAtual).toFixed(2)}.`;
+}
+
+function renderizarDadosTecnicos() {
   const texto = obterTextoAtual();
   const fase = obterFaseAtual();
   if (!texto || !fase) return;
+  const stats = obterStatsDaFase(texto, estado.faseAtualIndex);
+  const unidade = estado.unidadeAtual;
 
-  const totalTexto = contarUnidadesTexto();
-  const reveladasTexto = contarUnidadesReveladasTexto();
-  setBarra(barraProgressoTexto, totalTexto ? (reveladasTexto / totalTexto) * 100 : 0);
+  dadosTecnicos.innerHTML = '';
+  const resumo = document.createElement('div');
+  resumo.textContent = `Livro: ${texto.titulo} · Fase: ${estado.faseAtualIndex + 1} · Erros da fase: ${stats.erros || 0} · Tentativas: ${stats.tentativas || 0}`;
 
-  const unidadesFase = obterUnidadesDaFase();
-  const reveladasFase = obterSetReveladasDaFase(estado.faseAtualIndex).size;
-  setBarra(barraProgressoFase, unidadesFase.length ? (reveladasFase / unidadesFase.length) * 100 : 0);
+  const pre = document.createElement('pre');
+  pre.textContent = JSON.stringify({
+    modo: estado.modo,
+    workoutAtivo: estado.workout.ativo,
+    faseAtualIndex: estado.faseAtualIndex,
+    unidadeAtualIndex: estado.unidadeAtualIndex,
+    unidadeAtual: unidade,
+    statsFase: stats,
+  }, null, 2);
 
-  const progressoPalavras = estado.modoRevisaoUnidade
-    ? 1
-    : (estado.palavrasOriginais.length ? estado.palavrasSelecionadas.length / estado.palavrasOriginais.length : 0);
-  setBarra(barraProgressoFrase, progressoPalavras * 100);
-}
-
-function setBarra(elemento, percentual) {
-  elemento.style.width = `${Math.max(0, Math.min(100, percentual))}%`;
-}
-
-function contarUnidadesTexto() {
-  const texto = obterTextoAtual();
-  if (!texto) return 0;
-  return texto.fases.reduce((soma, fase) => soma + obterUnidadesDaFase(fase).length, 0);
-}
-
-function contarUnidadesReveladasTexto() {
-  const texto = obterTextoAtual();
-  if (!texto) return 0;
-  return texto.fases.reduce((soma, fase, faseIndex) => {
-    const unidades = obterUnidadesDaFase(fase);
-    const reveladas = obterSetReveladasDaFase(faseIndex);
-    return soma + Math.min(reveladas.size, unidades.length);
-  }, 0);
-}
-
-function registrarConclusaoDaUnidade() {
-  const texto = obterTextoAtual();
-  if (!texto) return;
-
-  const stats = lerStats();
-  const chave = chaveTexto(texto);
-  if (!stats[chave]) stats[chave] = { titulo: texto.titulo, fases: {} };
-
-  const faseId = String(estado.faseAtualIndex);
-  if (!stats[chave].fases[faseId]) {
-    stats[chave].fases[faseId] = { erros: 0, tentativas: 0, conclusoes: 0, unidades: {} };
-  }
-
-  const faseStats = stats[chave].fases[faseId];
-  faseStats.erros += estado.errosUnidade;
-  faseStats.tentativas += 1;
-  faseStats.ultimaPratica = new Date().toISOString();
-
-  const unidadeId = String(estado.unidadeAtualIndex);
-  if (!faseStats.unidades[unidadeId]) faseStats.unidades[unidadeId] = { erros: 0, tentativas: 0 };
-  faseStats.unidades[unidadeId].erros += estado.errosUnidade;
-  faseStats.unidades[unidadeId].tentativas += 1;
-
-  const unidades = obterUnidadesDaFase();
-  if (estado.unidadeAtualIndex >= unidades.length - 1) faseStats.conclusoes += 1;
-
-  salvarStats(stats);
-}
-
-function chaveTexto(texto) {
-  const base = `${texto.titulo}\n${texto.fases.map(fase => fase.texto).join('\n')}`;
-  return `${slugificar(texto.titulo)}::${texto.fases.length}::${hashString(base)}`;
-}
-
-function hashString(texto) {
-  let hash = 2166136261;
-  for (let i = 0; i < texto.length; i++) {
-    hash ^= texto.charCodeAt(i);
-    hash = Math.imul(hash, 16777619);
-  }
-  return (hash >>> 0).toString(16);
+  dadosTecnicos.appendChild(resumo);
+  dadosTecnicos.appendChild(pre);
 }
 
 function lerStats() {
@@ -1064,80 +1009,25 @@ function lerStats() {
 function salvarStats(stats) {
   try {
     localStorage.setItem(STATS_KEY, JSON.stringify(stats));
+    estado.mudouDesdeExportacao = true;
   } catch (erro) {
     console.warn('Não foi possível salvar estatísticas.', erro);
   }
 }
 
-function obterStatsDaFase(texto, faseIndex) {
-  const stats = lerStats();
-  const registroTexto = stats[chaveTexto(texto)];
-  if (!registroTexto || !registroTexto.fases) return { erros: 0, tentativas: 0, conclusoes: 0, unidades: {} };
-  return registroTexto.fases[String(faseIndex)] || { erros: 0, tentativas: 0, conclusoes: 0, unidades: {} };
+function chaveTexto(texto) {
+  if (texto.key) return texto.key;
+  const base = `${texto.titulo}\n${texto.fases.map(fase => fase.texto).join('\n')}`;
+  return `${slugificar(texto.titulo)}::${texto.fases.length}::${hashString(base)}`;
 }
 
-function renderizarPainelFases() {
-  const texto = obterTextoAtual();
-  if (!texto || painelFases.hidden) return;
-
-  const fasesComStats = texto.fases.map((fase, index) => {
-    const stats = obterStatsDaFase(texto, index);
-    return {
-      fase,
-      index,
-      erros: stats.erros || 0,
-      tentativas: stats.tentativas || 0,
-      conclusoes: stats.conclusoes || 0,
-      media: stats.tentativas ? (stats.erros / stats.tentativas) : 0,
-    };
-  });
-
-  const maxErros = Math.max(0, ...fasesComStats.map(item => item.erros));
-  const faseAtualStats = obterStatsDaFase(texto, estado.faseAtualIndex);
-  const faseAtualReveladas = obterSetReveladasDaFase(estado.faseAtualIndex).size;
-  const faseAtualTotal = obterUnidadesDaFase().length;
-
-  resumoFase.textContent = `Fase atual: ${estado.faseAtualIndex + 1}. ${faseAtualReveladas}/${faseAtualTotal} trecho(s) revelado(s). Erros acumulados: ${faseAtualStats.erros || 0}.`;
-  listaFases.innerHTML = '';
-
-  fasesComStats.forEach(item => {
-    const botao = document.createElement('button');
-    botao.type = 'button';
-    botao.className = 'fase-tile';
-    botao.textContent = String(item.index + 1);
-    botao.title = `Fase ${item.index + 1} | Erros: ${item.erros} | Tentativas: ${item.tentativas} | Média: ${item.media.toFixed(2)}`;
-    if (item.index === estado.faseAtualIndex) botao.classList.add('ativa');
-    if (item.erros > 0) botao.classList.add('com-erro');
-    if (item.erros > 0 && item.erros === maxErros) botao.classList.add('dificil');
-    botao.addEventListener('click', () => irParaFase(item.index));
-    listaFases.appendChild(botao);
-  });
-}
-
-function renderizarDadosFase() {
-  const texto = obterTextoAtual();
-  const fase = obterFaseAtual();
-  if (!texto || !fase) return;
-
-  const stats = obterStatsDaFase(texto, estado.faseAtualIndex);
-  const dados = {
-    texto: texto.titulo,
-    modo: estado.modo,
-    faseIndex: estado.faseAtualIndex,
-    faseNumero: estado.faseAtualIndex + 1,
-    faseTitulo: fase.titulo,
-    totalUnidadesNaFase: obterUnidadesDaFase().length,
-    unidadeAtualIndex: estado.unidadeAtualIndex,
-    unidadeAtualNumero: estado.unidadeAtualIndex + 1,
-    sentenceGroup: estado.unidadeAtual && estado.unidadeAtual.sentenceGroup,
-    parteDaFrase: estado.unidadeAtual ? `${estado.unidadeAtual.parteIndex + 1}/${estado.unidadeAtual.totalPartes}` : null,
-    fraseCompleta: estado.unidadeAtual && estado.unidadeAtual.fraseCompleta,
-    workout: estado.workout,
-    reveladasNaFase: Array.from(obterSetReveladasDaFase(estado.faseAtualIndex)).sort((a, b) => a - b),
-    stats,
-  };
-
-  dadosFaseJson.textContent = JSON.stringify(dados, null, 2);
+function hashString(texto) {
+  let hash = 2166136261;
+  for (let i = 0; i < texto.length; i++) {
+    hash ^= texto.charCodeAt(i);
+    hash = Math.imul(hash, 16777619);
+  }
+  return (hash >>> 0).toString(16);
 }
 
 function atualizarFeedback(mensagem, tipo) {
@@ -1179,9 +1069,6 @@ function timestampParaArquivo() {
   const offsetMinutos = -data.getTimezoneOffset();
   const sinal = offsetMinutos >= 0 ? 'mais' : 'menos';
   const abs = Math.abs(offsetMinutos);
-  const offsetHoras = pad(Math.floor(abs / 60));
-  const offsetRestante = pad(abs % 60);
-
   return [
     data.getFullYear(),
     pad(data.getMonth() + 1),
@@ -1190,19 +1077,14 @@ function timestampParaArquivo() {
     pad(data.getMinutes()),
     pad(data.getSeconds()),
     pad(data.getMilliseconds(), 3),
-    `gmt-${sinal}-${offsetHoras}-${offsetRestante}`,
+    `gmt-${sinal}-${pad(Math.floor(abs / 60))}-${pad(abs % 60)}`,
   ].join('-');
 }
 
 function timestampLegivelLocal() {
   const data = new Date();
   return data.toLocaleString(undefined, {
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-    second: '2-digit',
-    fractionalSecondDigits: 3,
+    year: 'numeric', month: '2-digit', day: '2-digit',
+    hour: '2-digit', minute: '2-digit', second: '2-digit', fractionalSecondDigits: 3,
   });
 }
