@@ -1,64 +1,98 @@
 # Memorizador de Textos
 
-Um site estático para treinar memorização por reconstrução ativa.
+Um site estático para treinar memorização ativa de textos.
 
-Você carrega um livro em JSON, escolhe uma fase e reconstrói cada trecho clicando nas palavras embaralhadas. Conforme acerta, o texto vai sendo revelado no quadro principal, como um pergaminho que aparece aos poucos.
+A mecânica é simples: o app funciona como um cabeçote que passa pelo texto. Em cada trecho, as palavras são embaralhadas. Você reconstrói a ordem correta; quando acerta, o trecho deixa de ser jogo e vira texto revelado.
+
+A ideia não é reler passivamente. É reconstruir.
 
 ## Como usar
 
 1. Abra o site.
-2. No painel **Arquivos e sessão**, clique em **Selecionar livro JSON**.
-3. Escolha o arquivo do texto.
-4. No topo, reconstrua o trecho clicando nas palavras na ordem certa.
-5. Use os quadradinhos de **Fases** para escolher o parágrafo que quer treinar.
-6. Use **Workout dos erros** para reforçar os trechos em que mais errou.
-7. Baixe o progresso antes de fechar se quiser manter um backup portátil da sessão.
+2. Clique em **Selecionar livro JSON**.
+3. Escolha o arquivo `.json` do texto.
+4. Selecione uma fase, se quiser começar por um parágrafo específico.
+5. Monte o trecho clicando nas palavras na ordem correta.
+6. Use **Workout dos erros** para repetir os trechos mais difíceis.
+7. Use **Baixar progresso** para salvar um backup da sessão.
 
 ## Fases
 
 Cada parágrafo do texto vira uma fase.
 
-A grade de fases mostra apenas o número de cada fase para não poluir o treino. Fases com erros acumulados aparecem destacadas. Os dados técnicos da fase atual ficam no fim da página.
+Os botões numerados representam os parágrafos. A cor indica desempenho aproximado:
+
+- verde: fase com acertos registrados;
+- amarelo: fase com média baixa de erros;
+- vermelho: fase com média alta de erros;
+- azul: fase atual.
+
+A ordem das fases não muda. Isso preserva a orientação espacial durante o treino.
+
+## Texto revelado
+
+O texto revelado mostra o texto desde o começo até a posição atual do cabeçote. O que ainda não foi alcançado não aparece.
+
+Quando um trecho é acertado, ele entra no quadro como texto normal. Não vira uma coleção de botões ou palavras separadas. Isso mantém a leitura leve e limpa.
+
+## Erros e workout
+
+Cada clique em palavra errada registra um erro. A palavra errada fica marcada em vermelho até você acertar a próxima palavra correta.
+
+O workout usa os erros acumulados para montar uma sessão de reforço. Se uma frase longa foi dividida em partes, o workout treina todas as partes daquela frase em sequência, para preservar a lógica do texto.
+
+Ao acertar um trecho no workout, apenas um erro é subtraído daquele trecho. Erros cometidos durante o workout também são registrados.
 
 ## Progresso
 
-O site mostra três progressos diferentes:
+O progresso é salvo no navegador e pode ser exportado em JSON.
 
-- progresso do texto completo;
-- progresso da fase atual;
-- progresso do trecho/frase atual.
+O arquivo de progresso não copia o livro inteiro. Ele guarda apenas:
 
-A barra do trecho avança palavra por palavra. As barras da fase e do texto só avançam quando o trecho é concluído, porque a revelação só acontece depois do acerto completo.
+- chave do texto;
+- posição atual;
+- modo de treino;
+- estatísticas de erro, tentativa e acerto.
 
-## Voltar e avançar
+Para continuar depois, carregue o livro JSON e importe o JSON de progresso correspondente.
 
-Você pode voltar para trechos já revelados. Quando o trecho já foi concluído antes, o botão de avançar fica disponível para você navegar de volta até o ponto atual sem precisar refazer tudo.
+## Formato básico do JSON do livro
 
-Se quiser praticar de novo um trecho já revelado, use **Reiniciar trecho**.
+```json
+[
+  {
+    "titulo": "Meu Texto",
+    "paragrafos": [
+      "Primeiro parágrafo.",
+      "Segundo parágrafo."
+    ]
+  }
+]
+```
 
-## Workout dos erros
+Também funciona com parágrafos divididos em frases:
 
-O botão **Workout dos erros** monta uma sessão de reforço com as frases que acumularam mais erros.
+```json
+{
+  "titulo": "Meu Texto",
+  "autor": "Nome do autor",
+  "paragrafos": [
+    {
+      "id": "p001",
+      "tipo": "narracao",
+      "texto": "Primeiro parágrafo completo.",
+      "frases": [
+        { "id": "p001_s001", "texto": "Primeira frase." },
+        { "id": "p001_s002", "texto": "Segunda frase." }
+      ]
+    }
+  ]
+}
+```
 
-Quando uma frase longa foi dividida em dois ou mais trechos para não virar uma sopa de palavras, o workout treina todos esses trechos em sequência. Assim você reforça a frase inteira sem perder a lógica do texto.
-
-## Erros
-
-Quando uma palavra errada é clicada, ela fica vermelha até a próxima palavra correta ser encontrada. A mesma palavra errada não soma erro infinitamente no mesmo ciclo.
-
-Os erros são salvos por fase e por trecho, permitindo reforçar os pontos mais difíceis.
-
-## Progresso e backup
-
-O navegador salva automaticamente o progresso localmente usando `localStorage`.
-
-Você também pode usar:
-
-- **Baixar progresso** para exportar um JSON de backup;
-- **Importar progresso** para restaurar um backup anterior.
-
-O arquivo exportado inclui um timestamp completo no nome.
+O segundo formato é melhor para textos longos, porque preserva parágrafos e frases.
 
 ## Privacidade
 
-O site é estático. O texto e o progresso são processados no próprio navegador. Nada é enviado para servidor.
+O livro e o progresso são processados no próprio navegador. Nada é enviado para servidor.
+
