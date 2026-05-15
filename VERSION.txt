@@ -1,13 +1,12 @@
-Memorizador de Textos
-Versão: v0.5-workout-erros
-Build: 2026-05-12T19-12-39
+v0.6-cabecote-workout
 
-Checklist desta build:
-- barras de texto e fase só avançam quando o trecho é concluído
-- barra do trecho continua avançando palavra por palavra
-- ao voltar para trecho já revelado, botão de avançar fica disponível
-- botão de reiniciar permite praticar de novo um trecho já revelado
-- workout dos erros: treina grupos/frases com maior erro acumulado
-- quando uma frase longa foi quebrada em trechos, o workout treina todos os trechos dela em sequência
-- fases continuam fixas em ordem numérica
-- compatível com GitHub Pages sem build
+- Mecânica de cabeçote: o texto revelado acompanha a posição atual.
+- Texto revelado é texto simples, não spans por palavra.
+- Mantida estética com sombras, cores, botões e animações.
+- Apenas uma barra discreta: progresso da fase.
+- Fases são quadradinhos numerados fixos abaixo do jogo.
+- Workout dos erros usa todas as frases com erro, ordenadas por dificuldade.
+- Se um trecho pertence a frase quebrada, o workout treina todas as partes em sequência.
+- Erro é contado por clique errado; clique repetido no mesmo botão vermelho não infla a contagem.
+- Acerto no workout reduz apenas um erro; erros feitos no workout continuam contando.
+- Progresso exportado salva índices/estatísticas, não o livro inteiro.
