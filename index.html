@@ -9,113 +9,100 @@
 </head>
 <body>
   <div class="app">
-    <header class="app-header">
+    <header class="hero">
       <h1>Memorizador de Textos</h1>
-      <p class="subtitulo">Reconstrua o texto palavra por palavra. O pergaminho vai sendo revelado conforme você vence cada trecho.</p>
-      <p class="build-info">v0.5-workout-erros</p>
+      <p class="subtitulo">Reconstrua trechos embaralhados, revele o texto e use os erros como mapa de treino.</p>
+      <span class="versao-app">v0.6-cabecote-workout</span>
     </header>
 
     <main>
-      <section class="card tela-vazia" id="tela-vazia">
-        <strong>Nenhum livro carregado ainda.</strong>
-        <p>Carregue um JSON no painel de arquivos, logo abaixo da área de jogo.</p>
-      </section>
-
-      <section class="jogo card" id="jogo" hidden>
-        <div class="jogo-topo">
-          <h2 class="titulo-texto" id="titulo-texto"></h2>
-          <div class="status-discreto">
-            <span>Fase <strong id="fase-atual">0</strong>/<span id="total-fases">0</span></span>
-            <span><span id="rotulo-unidade">Trecho</span> <strong id="unidade-atual">0</strong>/<span id="total-unidades">0</span></span>
-            <span>Erros no trecho: <strong id="contador-erros">0</strong></span>
+      <section class="jogo" id="jogo" aria-label="Área principal do treino">
+        <section class="card texto-revelado" id="texto-revelado" hidden>
+          <div class="titulo-linha">
+            <h2 id="titulo-texto">Texto</h2>
+            <span id="status-cabecote">Cabeçote parado</span>
           </div>
-        </div>
-
-        <section class="pergaminho" id="texto-revelado">
-          <div class="pergaminho-cabecalho">
-            <h3>Texto revelado</h3>
-            <span id="resumo-texto-revelado">0% revelado</span>
-          </div>
-          <div class="texto-corrido vazio" id="texto-corrido">Complete o primeiro trecho para começar a revelar o texto.</div>
+          <div class="texto-corrido vazio" id="texto-corrido">Carregue um livro JSON para começar.</div>
         </section>
 
-        <div class="progresso-discreto">
-          <span>texto</span>
-          <div class="barra-progresso pequena" aria-label="Progresso do texto completo">
-            <div id="barra-progresso-texto"></div>
+        <section class="progresso-discreto" id="linha-progresso-fase" hidden>
+          <div class="progresso-label">
+            <span id="label-progresso-fase">Fase 0/0</span>
+            <span id="label-progresso-unidade">Trecho 0/0</span>
           </div>
-        </div>
-
-        <section class="area-montagem vazia" id="area-montagem"></section>
-
-        <div class="progresso-discreto">
-          <span>fase</span>
-          <div class="barra-progresso pequena" aria-label="Progresso da fase atual">
+          <div class="barra-progresso" aria-label="Progresso da fase">
             <div id="barra-progresso-fase"></div>
           </div>
-        </div>
+        </section>
 
-        <section class="area-palavras card" id="area-palavras"></section>
-
-        <div class="progresso-discreto">
-          <span>trecho</span>
-          <div class="barra-progresso pequena" aria-label="Progresso do trecho atual">
-            <div id="barra-progresso-frase"></div>
-          </div>
-        </div>
+        <section class="area-montagem vazia" id="area-montagem" hidden></section>
+        <section class="area-palavras card" id="area-palavras" hidden></section>
 
         <div class="feedback" id="feedback"></div>
 
-        <div class="rodape-treino">
-          <button class="btn secundario" id="btn-anterior" type="button" hidden>Voltar</button>
+        <div class="rodape-treino" id="rodape-treino" hidden>
+          <button class="btn secundario" id="btn-anterior" type="button">Voltar</button>
           <button class="btn secundario" id="btn-reiniciar" type="button">Reiniciar trecho</button>
           <button class="btn primario" id="btn-proximo" type="button">Próximo trecho</button>
         </div>
       </section>
 
-      <section class="card painel-fases tecnico" id="painel-fases" hidden>
-        <div class="painel-titulo-linha">
+      <section class="card tela-vazia" id="tela-vazia">
+        <strong>Nenhum livro carregado ainda.</strong>
+        <p>Use o painel abaixo para selecionar um arquivo JSON de texto.</p>
+      </section>
+
+      <section class="card painel-fases" id="painel-fases" hidden>
+        <div class="titulo-linha">
           <h3>Fases</h3>
-          <button class="btn secundario compacto" id="btn-repetir-fase" type="button">Repetir fase atual</button>
-          <button class="btn workout compacto" id="btn-workout-erros" type="button">Workout dos erros</button>
+          <span id="resumo-fase">Cada parágrafo é uma fase.</span>
         </div>
-        <p class="resumo-fase" id="resumo-fase">Cada quadrado é um parágrafo. Vermelho indica fase com erro acumulado.</p>
         <div class="fases-grid" id="lista-fases"></div>
       </section>
 
-      <section class="card painel-arquivo tecnico" id="painel-arquivo" aria-label="Carregamento de arquivos JSON">
-        <h3>Arquivos e sessão</h3>
+      <details class="card painel-detalhes" id="painel-controles" open>
+        <summary>Livro, progresso e modos</summary>
+        <section class="painel-arquivo" id="painel-arquivo" aria-label="Carregamento de arquivos JSON">
+          <div class="linha-controles">
+            <label class="file-label" for="input-json">Selecionar livro JSON</label>
+            <input id="input-json" type="file" accept=".json,application/json" multiple />
 
-        <div class="linha-controles">
-          <label class="file-label" for="input-json">Selecionar livro JSON</label>
-          <input id="input-json" type="file" accept=".json,application/json" multiple />
+            <label class="file-label alternativa" for="input-progresso">Importar progresso</label>
+            <input id="input-progresso" type="file" accept=".json,application/json" />
 
-          <label class="file-label alternativa" for="input-progresso">Importar progresso</label>
-          <input id="input-progresso" type="file" accept=".json,application/json" />
+            <button class="btn secundario" id="btn-baixar-progresso" type="button">Baixar progresso</button>
+          </div>
 
-          <button class="btn secundario" id="btn-baixar-progresso" type="button">Baixar progresso</button>
-        </div>
+          <div class="linha-controles">
+            <select id="select-texto" disabled>
+              <option value="">Nenhum texto carregado</option>
+            </select>
 
-        <div class="linha-controles">
-          <select id="select-texto" disabled>
-            <option value="">Nenhum texto carregado</option>
-          </select>
+            <select id="select-modo" disabled>
+              <option value="frases">Treinar por trechos/frases</option>
+              <option value="paragrafos">Treinar por parágrafos</option>
+            </select>
 
-          <select id="select-modo" disabled>
-            <option value="frases">Treinar por trechos/frases</option>
-            <option value="paragrafos">Treinar por parágrafos</option>
-          </select>
-        </div>
+            <select id="select-fase" disabled>
+              <option value="">Nenhuma fase disponível</option>
+            </select>
+          </div>
 
-        <p class="ajuda" id="nome-arquivo">O livro e o progresso são processados localmente no navegador.</p>
-        <p class="erro-arquivo" id="erro-arquivo"></p>
-      </section>
+          <div class="linha-controles">
+            <button class="btn secundario" id="btn-repetir-fase" type="button">Repetir fase atual</button>
+            <button class="btn perigo-suave" id="btn-workout" type="button">Workout dos erros</button>
+            <button class="btn secundario" id="btn-sair-workout" type="button" hidden>Sair do workout</button>
+          </div>
 
-      <section class="card painel-dados tecnico" id="painel-dados" hidden>
-        <h3>Dados da fase atual</h3>
-        <p class="ajuda">Esses dados são úteis para depuração, exportação e análise do treino. Não precisam aparecer dentro dos quadradinhos.</p>
-        <pre class="dados-json" id="dados-fase-json">{}</pre>
-      </section>
+          <p class="ajuda" id="nome-arquivo">O livro e o progresso são processados localmente no navegador.</p>
+          <p class="erro-arquivo" id="erro-arquivo"></p>
+        </section>
+      </details>
+
+      <details class="card painel-detalhes" id="painel-tecnico" hidden>
+        <summary>Dados técnicos da fase atual</summary>
+        <div class="dados-tecnicos" id="dados-tecnicos"></div>
+      </details>
     </main>
   </div>
 </body>
